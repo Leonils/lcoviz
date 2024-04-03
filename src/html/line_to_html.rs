@@ -1,8 +1,8 @@
-use lcov::report::section::line::Lines;
 use crate::models::{
     components::ComponentsFactory, file_lines_provider::FileLinesProvider, html_builder::HtmlNode,
     to_html::ToHtmlWithLinesProvider,
 };
+use lcov::report::section::line::Lines;
 
 impl ToHtmlWithLinesProvider for Lines {
     fn to_html(
@@ -10,26 +10,27 @@ impl ToHtmlWithLinesProvider for Lines {
         components: impl ComponentsFactory,
         lines_provider: impl FileLinesProvider,
     ) -> HtmlNode {
-        let lines: Vec<HtmlNode> = self.keys()
+        let lines: Vec<HtmlNode> = self
+            .keys()
             .map(|line| {
                 let count = self.get(line).unwrap().count;
                 let line_content = lines_provider
-                    .get_file_lines(line.line as usize, line.line as usize + 1)
+                    .get_file_lines(line.line as usize, line.line as usize)
                     .unwrap_or_else(|_| "".to_string());
                 components.create_line(line.line, count, line_content)
             })
             .collect();
-        
+
         components.create_code(lines)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-    use lcov::report::section::line::{Key, Lines, Value};
-    use crate::mocks::{MockComponentsFactory, MockFilesProvider};
     use super::*;
+    use crate::mocks::{MockComponentsFactory, MockFilesProvider};
+    use lcov::report::section::line::{Key, Lines, Value};
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_no_lines_to_html() {
