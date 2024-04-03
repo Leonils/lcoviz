@@ -5,16 +5,22 @@ pub fn get_file_lines(
 ) -> Result<String, std::io::Error> {
     let file = std::fs::read_to_string(file_path)?;
     let lines: Vec<&str> = file.lines().collect();
-    let mut result = String::new();
-    for line in lines
+
+    if start_line > lines.len() || end_line > lines.len() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "index out of bounds",
+        ));
+    }
+
+    let result = lines
         .iter()
         .skip(start_line - 1)
         .take(end_line - start_line + 1)
-    {
-        result.push_str(line);
-        result.push_str("\n");
-    }
-    result.pop(); // Remove the last newline character
+        .map(|line| line.to_string())
+        .collect::<Vec<String>>()
+        .join("\n");
+
     Ok(result)
 }
 
@@ -50,5 +56,15 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("No such file or directory"));
+    }
+
+    #[test]
+    fn test_open_out_of_bounds_lines() {
+        let result = get_file_lines("tests/fixtures/my_code.cpp", 1, 100);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("index out of bounds"));
     }
 }
