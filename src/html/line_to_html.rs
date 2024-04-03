@@ -15,7 +15,10 @@ impl ToHtmlWithLinesProvider for Lines {
 
         for line in self.keys() {
             let count = self.get(line).unwrap().count;
-            container.add_child(components.create_line(line.line, count));
+            let line_content = lines_provider
+                .get_file_lines(line.line as usize, line.line as usize + 1)
+                .unwrap_or_else(|_| "".to_string());
+            container.add_child(components.create_line(line.line, count, line_content));
         }
 
         container
@@ -42,7 +45,7 @@ mod tests {
         ) -> Result<String, std::io::Error> {
             let mut lines: Vec<String> = Vec::with_capacity(end_line - start_line + 1);
             for i in start_line..end_line {
-                lines.push(format!("Line {}", i));
+                lines.push(format!("line_{}", i));
             }
             Ok(lines.join("\n"))
         }
@@ -51,8 +54,19 @@ mod tests {
     // Mock components factory
     struct MockComponentsFactory;
     impl ComponentsFactory for MockComponentsFactory {
-        fn create_line(&self, line_number: u32, count_number: u64) -> HtmlNode {
-            HtmlNode::text(format!("<>Line {}: {}</>", line_number, count_number).as_str())
+        fn create_line(
+            &self,
+            line_number: u32,
+            count_number: u64,
+            line_content: String,
+        ) -> HtmlNode {
+            HtmlNode::text(
+                format!(
+                    "<>Line {}[{}]: {}</>",
+                    line_number, count_number, line_content
+                )
+                .as_str(),
+            )
         }
     }
 
@@ -81,6 +95,9 @@ mod tests {
         lines.insert(line2_key, line2_value);
 
         let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider {});
-        assert_eq!(html.render(), "<div><>Line 1: 1</><>Line 2: 4</></div>");
+        assert_eq!(
+            html.render(),
+            "<div><>Line 1[1]: line_1</><>Line 2[4]: line_2</></div>"
+        );
     }
 }
