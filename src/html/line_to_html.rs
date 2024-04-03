@@ -31,44 +31,9 @@ mod tests {
 
     use lcov::report::section::line::{Key, Lines, Value};
 
-    use crate::models::html_builder::HtmlNode;
+    use crate::mocks::{MockComponentsFactory, MockFilesProvider};
 
     use super::*;
-
-    // Mock file provider
-    struct MockFilesProvider;
-    impl FileLinesProvider for MockFilesProvider {
-        fn get_file_lines(
-            &self,
-            start_line: usize,
-            end_line: usize,
-        ) -> Result<String, std::io::Error> {
-            let mut lines: Vec<String> = Vec::with_capacity(end_line - start_line + 1);
-            for i in start_line..end_line {
-                lines.push(format!("line_{}", i));
-            }
-            Ok(lines.join("\n"))
-        }
-    }
-
-    // Mock components factory
-    struct MockComponentsFactory;
-    impl ComponentsFactory for MockComponentsFactory {
-        fn create_line(
-            &self,
-            line_number: u32,
-            count_number: u64,
-            line_content: String,
-        ) -> HtmlNode {
-            HtmlNode::text(
-                format!(
-                    "<>Line {}[{}]: {}</>",
-                    line_number, count_number, line_content
-                )
-                .as_str(),
-            )
-        }
-    }
 
     #[test]
     fn test_no_lines_to_html() {

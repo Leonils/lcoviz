@@ -10,3 +10,6 @@ mod models {
     pub mod html_builder;
     pub mod to_html;
 }
+
+#[cfg(test)]
+pub mod mocks;
