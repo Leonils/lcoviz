@@ -1,13 +1,13 @@
-pub trait FileLinesProvider {
-    fn get_file_lines(&self, start_line: usize, end_line: usize) -> Result<String, std::io::Error>;
-}
+use std::path::PathBuf;
+
+use crate::models::file_lines_provider::FileLinesProvider;
 
 pub struct LocalFileLinesProvider {
-    file_path: String,
+    file_path: PathBuf,
 }
 
 impl LocalFileLinesProvider {
-    pub fn new(file_path: String) -> Self {
+    pub fn new(file_path: PathBuf) -> Self {
         LocalFileLinesProvider { file_path }
     }
 }
@@ -42,14 +42,14 @@ mod tests {
 
     #[test]
     fn test_open_file_absolute_line_1() {
-        let file = LocalFileLinesProvider::new("tests/fixtures/my_code.cpp".to_string());
+        let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
         let line_1 = file.get_file_lines(1, 1).unwrap();
         assert_eq!(line_1, "#include <iostream>");
     }
 
     #[test]
     fn test_open_file_absolute_line_3_to_8() {
-        let file = LocalFileLinesProvider::new("tests/fixtures/my_code.cpp".to_string());
+        let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
         let line_3_to_8 = file.get_file_lines(3, 8).unwrap();
         assert_eq!(
             line_3_to_8,
@@ -64,7 +64,8 @@ mod tests {
 
     #[test]
     fn test_open_non_existent_file() {
-        let file = LocalFileLinesProvider::new("tests/fixtures/non_existent_file.cpp".to_string());
+        let file =
+            LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/non_existent_file.cpp"));
         let result = file.get_file_lines(1, 1);
         assert!(result.is_err());
         assert!(result
@@ -75,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_open_out_of_bounds_lines() {
-        let file = LocalFileLinesProvider::new("tests/fixtures/my_code.cpp".to_string());
+        let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
         let result = file.get_file_lines(1, 100);
         assert!(result.is_err());
         assert!(result
