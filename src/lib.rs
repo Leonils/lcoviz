@@ -5,6 +5,8 @@ pub mod html {
 }
 
 mod models {
+    pub mod components;
     pub mod file_lines_provider;
+    pub mod html_builder;
     pub mod to_html;
 }
