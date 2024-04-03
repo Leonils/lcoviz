@@ -1,5 +1,4 @@
 use lcov::report::section::line::Lines;
-
 use crate::models::{
     components::ComponentsFactory, file_lines_provider::FileLinesProvider, html_builder::HtmlNode,
     to_html::ToHtmlWithLinesProvider,
@@ -11,28 +10,25 @@ impl ToHtmlWithLinesProvider for Lines {
         components: impl ComponentsFactory,
         lines_provider: impl FileLinesProvider,
     ) -> HtmlNode {
-        let mut container = HtmlNode::div();
-
-        for line in self.keys() {
-            let count = self.get(line).unwrap().count;
-            let line_content = lines_provider
-                .get_file_lines(line.line as usize, line.line as usize + 1)
-                .unwrap_or_else(|_| "".to_string());
-            container.add_child(components.create_line(line.line, count, line_content));
-        }
-
-        container
+        let lines: Vec<HtmlNode> = self.keys()
+            .map(|line| {
+                let count = self.get(line).unwrap().count;
+                let line_content = lines_provider
+                    .get_file_lines(line.line as usize, line.line as usize + 1)
+                    .unwrap_or_else(|_| "".to_string());
+                components.create_line(line.line, count, line_content)
+            })
+            .collect();
+        
+        components.create_code(lines)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
-
     use lcov::report::section::line::{Key, Lines, Value};
-
     use crate::mocks::{MockComponentsFactory, MockFilesProvider};
-
     use super::*;
 
     #[test]
@@ -62,7 +58,7 @@ mod tests {
         let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider {});
         assert_eq!(
             html.render(),
-            "<div><>Line 1[1]: line_1</><>Line 2[4]: line_2</></div>"
+            "<div>line(1, 1, line_1);line(2, 4, line_2);</div>"
         );
     }
 }

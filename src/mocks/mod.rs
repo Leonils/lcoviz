@@ -17,10 +17,18 @@ impl FileLinesProvider for MockFilesProvider {
 // Mock components factory
 pub struct MockComponentsFactory;
 impl ComponentsFactory for MockComponentsFactory {
+    fn create_code(&self, lines: Vec<HtmlNode>) -> HtmlNode {
+        let mut container = HtmlNode::div();
+        for line in lines  {
+           container.add_child(line); 
+        }
+        container
+    }
+
     fn create_line(&self, line_number: u32, count_number: u64, line_content: String) -> HtmlNode {
         HtmlNode::text(
             format!(
-                "<>Line {}[{}]: {}</>",
+                "line({}, {}, {});",
                 line_number, count_number, line_content
             )
             .as_str(),
