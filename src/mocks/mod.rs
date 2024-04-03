@@ -3,14 +3,23 @@ use super::models::{
 };
 
 // Mock file provider
-pub struct MockFilesProvider;
+pub struct MockFilesProvider {
+    nb_lines: u32,
+}
+impl MockFilesProvider {
+    pub fn new(number_lines: u32) -> Self {
+        MockFilesProvider {
+            nb_lines: number_lines
+        }
+    }
+}
 impl FileLinesProvider for MockFilesProvider {
-    fn get_file_lines(&self, start_line: usize, end_line: usize) -> Result<String, std::io::Error> {
-        let mut lines: Vec<String> = Vec::with_capacity(end_line - start_line + 1);
-        for i in start_line..end_line {
+    fn get_file_lines(&self) -> Result<Vec<String>, std::io::Error> {
+        let mut lines: Vec<String> = Vec::with_capacity(self.nb_lines as usize);
+        for i in 1..self.nb_lines+1 {
             lines.push(format!("line_{}", i));
         }
-        Ok(lines.join("\n"))
+        Ok(lines)
     }
 }
 

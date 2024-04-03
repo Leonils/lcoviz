@@ -2,7 +2,7 @@ use crate::models::{
     components::ComponentsFactory, file_lines_provider::FileLinesProvider, html_builder::HtmlNode,
     to_html::ToHtmlWithLinesProvider,
 };
-use lcov::report::section::line::Lines;
+use lcov::report::section::line::{self, Lines};
 
 impl ToHtmlWithLinesProvider for Lines {
     fn to_html(
@@ -10,14 +10,22 @@ impl ToHtmlWithLinesProvider for Lines {
         components: impl ComponentsFactory,
         lines_provider: impl FileLinesProvider,
     ) -> HtmlNode {
-        let lines: Vec<HtmlNode> = self
-            .keys()
-            .map(|line| {
-                let count = self.get(line).unwrap().count;
-                let line_content = lines_provider
-                    .get_file_lines(line.line as usize, line.line as usize)
-                    .unwrap_or_else(|_| "".to_string());
-                components.create_line(line.line, count, line_content)
+        let lines = lines_provider
+            .get_file_lines()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(i, line_content)| {
+                let key = line::Key {
+                    line: (i + 1) as u32,
+                };
+
+                let count = match self.get(&key) {
+                    None => 0,
+                    Some(line::Value { count, checksum: _ }) => *count,
+                };
+
+                components.create_line((i + 1) as u32, count, line_content.to_string())
             })
             .collect();
 
@@ -35,7 +43,7 @@ mod tests {
     #[test]
     fn test_no_lines_to_html() {
         let lines: Lines = BTreeMap::new();
-        let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider {});
+        let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider::new(0));
         assert_eq!(html.render(), "<div></div>");
     }
 
@@ -56,7 +64,7 @@ mod tests {
         lines.insert(line1_key, line1_value);
         lines.insert(line2_key, line2_value);
 
-        let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider {});
+        let html = lines.to_html(MockComponentsFactory {}, MockFilesProvider::new(2));
         assert_eq!(
             html.render(),
             "<div>line(1, 1, line_1);line(2, 4, line_2);</div>"

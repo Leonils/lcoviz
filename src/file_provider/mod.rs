@@ -13,26 +13,10 @@ impl LocalFileLinesProvider {
 }
 
 impl FileLinesProvider for LocalFileLinesProvider {
-    fn get_file_lines(&self, start_line: usize, end_line: usize) -> Result<String, std::io::Error> {
+    fn get_file_lines(&self) -> Result<Vec<String>, std::io::Error> {
         let file = std::fs::read_to_string(&self.file_path)?;
-        let lines: Vec<&str> = file.lines().collect();
-
-        if start_line > lines.len() || end_line > lines.len() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "index out of bounds",
-            ));
-        }
-
-        let result = lines
-            .iter()
-            .skip(start_line - 1)
-            .take(end_line - start_line + 1)
-            .map(|line| line.to_string())
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        Ok(result)
+        let lines: Vec<String> = file.lines().map(|s| s.to_string()).collect();
+        Ok(lines)
     }
 }
 
@@ -43,45 +27,27 @@ mod tests {
     #[test]
     fn test_open_file_absolute_line_1() {
         let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
-        let line_1 = file.get_file_lines(1, 1).unwrap();
-        assert_eq!(line_1, "#include <iostream>");
-    }
-
-    #[test]
-    fn test_open_file_absolute_line_3_to_8() {
-        let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
-        let line_3_to_8 = file.get_file_lines(3, 8).unwrap();
+        let lines = file.get_file_lines().unwrap();
         assert_eq!(
-            line_3_to_8,
-            "unsigned long long factorial(int n) {
-    if (n == 0)
-        return 1;
-    else
-        return n * factorial(n - 1);
-}"
+            lines, 
+            vec![
+                "#include <iostream>",
+                "", 
+                "unsigned long long factorial(int n) {", 
+                "    if (n == 0)", 
+                "        return 1;", 
+                "    else", 
+                "        return n * factorial(n - 1);", 
+                "}", 
+                "", 
+                "int main() {", 
+                "    int number;", 
+                "    std::cout << \"Enter a positive integer: \";", 
+                "    std::cin >> number;", 
+                "    std::cout << \"Factorial of \" << number << \" = \" << factorial(number);", 
+                "    std::cout << std::endl;", 
+                "    return 0;", "}"
+            ]
         );
-    }
-
-    #[test]
-    fn test_open_non_existent_file() {
-        let file =
-            LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/non_existent_file.cpp"));
-        let result = file.get_file_lines(1, 1);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("No such file or directory"));
-    }
-
-    #[test]
-    fn test_open_out_of_bounds_lines() {
-        let file = LocalFileLinesProvider::new(PathBuf::from("tests/fixtures/my_code.cpp"));
-        let result = file.get_file_lines(1, 100);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("index out of bounds"));
     }
 }
