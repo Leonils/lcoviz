@@ -12,14 +12,18 @@ impl ComponentsFactory for MockComponentsFactory {
     }
 
     fn create_line(&self, line_number: u32, count_number: u64, line_content: String) -> HtmlNode {
+        let color = if count_number > 0 { "green" } else { "red" };
+        let background_color = if count_number > 0 { "#CCFFCC" } else { "#FFCCCC" };
         HtmlNode::text(
             format!(
-                "  <div style=\"display:flex;\">
+                "  <div style=\"display:flex;color:{};background-color:{}\">
     <div style=\"width:50px;min-width:50px\">{}</div>
     <div style=\"width:50px;min-width:50px\">{}</div>
     <div><pre style=\"margin:0\">{}</pre></div>
   </div>
 ",
+                color,
+                background_color,
                 line_number,
                 count_number,
                 line_content.replace("<", "&lt;").replace(">", "&gt;")
