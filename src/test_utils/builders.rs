@@ -11,6 +11,10 @@ pub trait FromCount {
     fn from_count(count: u64) -> Self;
 }
 
+pub trait InsertLine {
+    fn insert_line(&mut self, line_number: u32, count: u64) -> &mut Self;
+}
+
 impl FromStr for lcov::report::section::Key {
     fn from_str(text: &str) -> Self {
         lcov::report::section::Key {
@@ -32,5 +36,15 @@ impl FromCount for lcov::report::section::line::Value {
             count,
             ..Default::default()
         }
+    }
+}
+
+impl InsertLine for lcov::report::section::line::Lines {
+    fn insert_line(&mut self, line_number: u32, count: u64) -> &mut Self {
+        self.insert(
+            lcov::report::section::line::Key::from_line_number(line_number),
+            lcov::report::section::line::Value::from_count(count),
+        );
+        self
     }
 }

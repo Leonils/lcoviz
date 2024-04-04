@@ -1,14 +1,12 @@
-struct Aggregated {
-    lines_count: u32,
-    covered_lines_count: u32,
+#[derive(Debug, PartialEq, Default)]
+pub struct Aggregated {
+    pub lines_count: u32,
+    pub covered_lines_count: u32,
 }
 
 impl Aggregated {
     fn new() -> Self {
-        Self {
-            lines_count: 0,
-            covered_lines_count: 0,
-        }
+        Default::default()
     }
 
     fn add(&mut self, other: &Self) {
@@ -16,7 +14,7 @@ impl Aggregated {
         self.covered_lines_count += other.covered_lines_count;
     }
 
-    fn from_section(value: lcov::report::section::Value) -> Self {
+    pub fn from_section(value: lcov::report::section::Value) -> Self {
         let lines_count = value.lines.len() as u32;
         let covered_lines_count = value
             .lines
@@ -36,7 +34,7 @@ mod test {
     use lcov::report::section::line::{Key as LineKey, Value as LineValue};
     use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
-    use crate::test_utils::builders::{FromCount, FromLineNumber, FromStr};
+    use crate::test_utils::builders::{FromCount, FromLineNumber, FromStr, InsertLine};
 
     use super::Aggregated;
 
@@ -79,10 +77,7 @@ mod test {
     #[test]
     fn when_creating_from_a_section_with_1_line_3_hit_it_shall_be_1_1() {
         let mut section_value = SectionValue::default();
-
-        section_value
-            .lines
-            .insert(LineKey::from_line_number(1), LineValue::from_count(3));
+        section_value.lines.insert_line(1, 3);
 
         let aggregated = Aggregated::from_section(section_value);
         assert_eq!(aggregated.lines_count, 1);
@@ -92,10 +87,7 @@ mod test {
     #[test]
     fn when_creating_from_a_section_with_1_line_0_hit_it_shall_be_1_0() {
         let mut section_value = SectionValue::default();
-
-        section_value
-            .lines
-            .insert(LineKey::from_line_number(1), LineValue::from_count(0));
+        section_value.lines.insert_line(1, 0);
 
         let aggregated = Aggregated::from_section(section_value);
         assert_eq!(aggregated.lines_count, 1);
@@ -105,18 +97,11 @@ mod test {
     #[test]
     fn when_creating_from_a_section_with_3_lines_2_covered_it_shall_be_3_2() {
         let mut section_value = SectionValue::default();
-
         section_value
             .lines
-            .insert(LineKey::from_line_number(1), LineValue::from_count(0));
-
-        section_value
-            .lines
-            .insert(LineKey::from_line_number(2), LineValue::from_count(3));
-
-        section_value
-            .lines
-            .insert(LineKey::from_line_number(3), LineValue::from_count(2));
+            .insert_line(1, 0)
+            .insert_line(2, 3)
+            .insert_line(3, 1);
 
         let aggregated = Aggregated::from_section(section_value);
         assert_eq!(aggregated.lines_count, 3);

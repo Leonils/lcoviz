@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::{tested_file::TestedFile, tested_module::TestedModule};
+use super::{tested_file::TestedFile, tested_module::TestedModule, with_path::WithPath};
 
 #[derive(Debug, PartialEq, Default)]
 struct ReportTree {
@@ -9,19 +9,11 @@ struct ReportTree {
 }
 
 impl ReportTree {
-    fn split_path(path: PathBuf) -> Vec<String> {
-        path.iter()
-            .map(|p| p.to_str().unwrap().to_string())
-            .collect()
-    }
-
     pub fn from_original_report(report: lcov::report::Report) -> Self {
         let mut tree = ReportTree::default();
         for (section_key, section_value) in report.sections {
-            let section_path = Self::split_path(section_key.source_file);
-
-            let file_name = section_path[section_path.len() - 1].clone();
-            let file = TestedFile::new(&(section_path.join("/")), &file_name);
+            let file = TestedFile::from_section(section_key, section_value);
+            let section_path = file.get_path();
 
             if section_path.is_empty() {
                 println!("Empty path");
