@@ -77,3 +77,68 @@ impl TestedModule {
         self.source_files.get(i).unwrap()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn when_creating_a_tested_module_the_name_and_path_should_be_set() {
+        let tested_module = TestedModule::new("path/to/name".to_string(), "name".to_string());
+        assert_eq!(tested_module.name, "name");
+        assert_eq!(tested_module.path, "path/to/name");
+        assert_eq!(tested_module.get_name(), "name");
+    }
+
+    #[test]
+    fn when_adding_a_file_with_an_empty_path_it_should_add_it_directly_to_sources() {
+        let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        let tested_file = TestedFile::new("section/file.cpp", "file.cpp");
+        tested_module.add_file(vec![], tested_file);
+
+        assert!(tested_module.modules.is_empty());
+        assert_eq!(tested_module.source_files.len(), 1);
+        assert_eq!(
+            tested_module.get_source_file_at(0).get_path_string(),
+            "section/file.cpp"
+        );
+    }
+
+    #[test]
+    fn when_adding_a_file_with_a_1_level_path_it_should_add_it_inside_a_module() {
+        let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        let tested_file = TestedFile::new("section/submodule/file.cpp", "file.cpp");
+        tested_module.add_file(vec!["submodule".to_string()], tested_file);
+
+        assert!(tested_module.source_files.is_empty());
+
+        assert_eq!(tested_module.modules.len(), 1);
+        let module = tested_module.get_module_at(0);
+        assert_eq!(module.path, "section/submodule");
+
+        assert_eq!(module.source_files.len(), 1);
+        let source_file = module.get_source_file_at(0);
+        assert_eq!(source_file.get_path_string(), "section/submodule/file.cpp");
+    }
+
+    #[test]
+    fn when_adding_2_file_to_the_same_sub_module_it_should_have_2_files_inside_submodule() {
+        let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        let tested_file = TestedFile::new("section/submodule/file.cpp", "file.cpp");
+        tested_module.add_file(vec!["submodule".to_string()], tested_file);
+        let tested_file = TestedFile::new("section/submodule/file2.cpp", "file2.cpp");
+        tested_module.add_file(vec!["submodule".to_string()], tested_file);
+
+        assert!(tested_module.source_files.is_empty());
+
+        assert_eq!(tested_module.modules.len(), 1);
+        let module = tested_module.get_module_at(0);
+        assert_eq!(module.path, "section/submodule");
+
+        assert_eq!(module.source_files.len(), 2);
+        let source_file = module.get_source_file_at(0);
+        assert_eq!(source_file.get_path_string(), "section/submodule/file.cpp");
+        let source_file = module.get_source_file_at(1);
+        assert_eq!(source_file.get_path_string(), "section/submodule/file2.cpp");
+    }
+}
