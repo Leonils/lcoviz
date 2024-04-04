@@ -19,7 +19,10 @@ impl ReportTree {
             let section_path = Self::split_path(section_key.source_file);
 
             let file_name = section_path[section_path.len() - 1].clone();
-            let file = TestedFile { file_name };
+            let file = TestedFile {
+                file_name,
+                path: section_path.join("/"),
+            };
 
             if section_path.is_empty() {
                 println!("Empty path");
@@ -36,7 +39,7 @@ impl ReportTree {
             if let Some(existing_module) = tree.modules.iter_mut().find(|m| m.name == module_name) {
                 existing_module.add_file(module_path_queue, file);
             } else {
-                let mut module = TestedModule::new(module_name);
+                let mut module = TestedModule::new(module_name.clone(), module_name);
                 module.add_file(module_path_queue, file);
                 tree.modules.push(module);
             }
@@ -49,19 +52,28 @@ impl ReportTree {
 #[derive(Debug, PartialEq, Default)]
 struct TestedFile {
     file_name: String,
+    path: String,
+}
+
+impl TestedFile {
+    fn get_path(&self) -> Vec<String> {
+        self.path.split('/').map(|s| s.to_string()).collect()
+    }
 }
 
 #[derive(Debug, PartialEq, Default)]
 struct TestedModule {
     name: String,
+    path: String,
     source_files: Vec<TestedFile>,
     modules: Vec<TestedModule>,
 }
 
 impl TestedModule {
-    fn new(name: String) -> Self {
+    fn new(path: String, name: String) -> Self {
         TestedModule {
             name,
+            path,
             source_files: vec![],
             modules: vec![],
         }
@@ -79,12 +91,16 @@ impl TestedModule {
             return;
         }
 
-        let module = TestedModule::new(module_name);
+        let module = TestedModule::new(format!("{}/{}", self.path, module_name), module_name);
         self.modules.push(module);
         self.modules
             .last_mut()
             .unwrap()
             .add_file(path[1..].to_vec(), file);
+    }
+
+    fn get_path(&self) -> Vec<String> {
+        self.path.split('/').map(|s| s.to_string()).collect()
     }
 }
 
@@ -108,47 +124,50 @@ mod test {
     }
 
     trait FromSourceFile {
-        fn from_source_files(name: &str, source_files: Vec<TestedFile>) -> Self;
+        fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self;
     }
     trait FromModules {
-        fn from_modules(name: &str, modules: Vec<TestedModule>) -> Self;
+        fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self;
     }
 
     impl TestedFile {
-        fn new(file_name: &str) -> Self {
+        fn new(path: &str, file_name: &str) -> Self {
             TestedFile {
                 file_name: String::from(file_name),
+                path: String::from(path),
             }
         }
     }
-    impl FromSourceFile for TestedModule {
-        fn from_source_files(name: &str, source_files: Vec<TestedFile>) -> Self {
+    impl TestedModule {
+        fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self {
             TestedModule {
                 name: String::from(name),
+                path: String::from(path),
                 source_files,
                 modules: vec![],
             }
         }
     }
-    impl FromModules for TestedModule {
-        fn from_modules(name: &str, modules: Vec<TestedModule>) -> Self {
+    impl TestedModule {
+        fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self {
             TestedModule {
                 name: String::from(name),
+                path: String::from(path),
                 source_files: vec![],
                 modules,
             }
         }
     }
-    impl FromSourceFile for ReportTree {
-        fn from_source_files(_name: &str, source_files: Vec<TestedFile>) -> Self {
+    impl ReportTree {
+        fn from_source_files(source_files: Vec<TestedFile>) -> Self {
             ReportTree {
                 source_files,
                 ..Default::default()
             }
         }
     }
-    impl FromModules for ReportTree {
-        fn from_modules(_name: &str, modules: Vec<TestedModule>) -> Self {
+    impl ReportTree {
+        fn from_modules(modules: Vec<TestedModule>) -> Self {
             ReportTree {
                 modules,
                 ..Default::default()
@@ -173,8 +192,8 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("main.cpp");
-        let expected_tree = ReportTree::from_source_files("report", vec![tested_file]);
+        let tested_file = TestedFile::new("main.cpp", "main.cpp");
+        let expected_tree = ReportTree::from_source_files(vec![tested_file]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -190,9 +209,10 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("main.cpp");
-        let tested_module = TestedModule::from_source_files("package", vec![tested_file]);
-        let expected_tree = ReportTree::from_modules("report", vec![tested_module]);
+        let tested_file = TestedFile::new("package/main.cpp", "main.cpp");
+        let tested_module =
+            TestedModule::from_source_files("package", "package", vec![tested_file]);
+        let expected_tree = ReportTree::from_modules(vec![tested_module]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -208,10 +228,15 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("main.cpp");
-        let tested_module_2 = TestedModule::from_source_files("sub-package", vec![tested_file]);
-        let tested_module_1 = TestedModule::from_modules("package", vec![tested_module_2]);
-        let expected_tree = ReportTree::from_modules("report", vec![tested_module_1]);
+        let tested_file = TestedFile::new("package/sub-package/main.cpp", "main.cpp");
+        let tested_module_2 = TestedModule::from_source_files(
+            "package/sub-package",
+            "sub-package",
+            vec![tested_file],
+        );
+        let tested_module_1 =
+            TestedModule::from_modules("package", "package", vec![tested_module_2]);
+        let expected_tree = ReportTree::from_modules(vec![tested_module_1]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -228,10 +253,10 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("main.cpp");
-        let tested_file_module = TestedFile::new("module.cpp");
+        let tested_file_main = TestedFile::new("main.cpp", "main.cpp");
+        let tested_file_module = TestedFile::new("module.cpp", "module.cpp");
         let expected_tree =
-            ReportTree::from_source_files("report", vec![tested_file_main, tested_file_module]);
+            ReportTree::from_source_files(vec![tested_file_main, tested_file_module]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -250,12 +275,15 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("main.cpp");
-        let tested_file_module = TestedFile::new("module.cpp");
-        let tested_module_package =
-            TestedModule::from_source_files("package", vec![tested_file_main, tested_file_module]);
-        let tested_module_my = TestedModule::from_modules("my", vec![tested_module_package]);
-        let expected_tree = ReportTree::from_modules("report", vec![tested_module_my]);
+        let tested_file_main = TestedFile::new("my/package/main.cpp", "main.cpp");
+        let tested_file_module = TestedFile::new("my/package/module.cpp", "module.cpp");
+        let tested_module_package = TestedModule::from_source_files(
+            "my/package",
+            "package",
+            vec![tested_file_main, tested_file_module],
+        );
+        let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
+        let expected_tree = ReportTree::from_modules(vec![tested_module_my]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -274,16 +302,35 @@ mod test {
 
         let report_tree = ReportTree::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("main.cpp");
-        let tested_file_module = TestedFile::new("module.cpp");
+        let tested_file_main = TestedFile::new("my/package/main.cpp", "main.cpp");
+        let tested_file_module = TestedFile::new("yours/module.cpp", "module.cpp");
         let tested_module_package =
-            TestedModule::from_source_files("package", vec![tested_file_main]);
-        let tested_module_my = TestedModule::from_modules("my", vec![tested_module_package]);
+            TestedModule::from_source_files("my/package", "package", vec![tested_file_main]);
+        let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
         let tested_module_yours =
-            TestedModule::from_source_files("yours", vec![tested_file_module]);
-        let expected_tree =
-            ReportTree::from_modules("report", vec![tested_module_my, tested_module_yours]);
+            TestedModule::from_source_files("yours", "yours", vec![tested_file_module]);
+        let expected_tree = ReportTree::from_modules(vec![tested_module_my, tested_module_yours]);
 
         assert_eq!(expected_tree, report_tree);
+    }
+
+    #[test]
+    fn when_building_tree_with_1_file_deeply_nested_i_can_access_path_of_modules_along_path_to_file(
+    ) {
+        let mut original_report = lcov::report::Report::new();
+        original_report.sections.insert(
+            SectionKey::from_str("package/sub-package/main.cpp"),
+            SectionValue::default(),
+        );
+
+        let report_tree = ReportTree::from_original_report(original_report);
+
+        let package = report_tree.modules.get(0).unwrap();
+        let sub_package = package.modules.get(0).unwrap();
+        let file = sub_package.source_files.get(0).unwrap();
+
+        assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
+        assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
+        assert_eq!(package.get_path(), vec!["package"]);
     }
 }
