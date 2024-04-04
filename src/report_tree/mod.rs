@@ -33,6 +33,18 @@ mod test {
 
     use super::{ReportTree, TestedFile};
 
+    trait FromStr {
+        fn from_str(text: &str) -> Self;
+    } 
+    impl FromStr for lcov::report::section::Key {
+        fn from_str(text: &str) -> Self { 
+            lcov::report::section::Key {
+                source_file: PathBuf::from(text),
+                test_name: String::from(""),
+            }
+        }
+    }
+
     #[test]
     fn when_building_tree_with_an_empty_report_it_should_get_an_empty_report() {
         let original_report = lcov::report::Report::new();
@@ -45,10 +57,7 @@ mod test {
     ) {
         let mut original_report = lcov::report::Report::new();
         original_report.sections.insert(
-            lcov::report::section::Key {
-                source_file: PathBuf::from("main.cpp"),
-                test_name: String::from(""),
-            },
+            lcov::report::section::Key::from_str("main.cpp"),
             lcov::report::section::Value::default(),
         );
 
