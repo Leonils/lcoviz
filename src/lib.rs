@@ -15,5 +15,7 @@ pub mod styles {
     pub mod light;
 }
 
+pub mod report_tree;
+
 #[cfg(test)]
 pub mod mocks;
