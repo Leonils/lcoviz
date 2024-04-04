@@ -21,7 +21,7 @@ impl ReportTree {
             let section_path = Self::split_path(section_key.source_file);
 
             let file_name = section_path[section_path.len() - 1].clone();
-            let file = TestedFile::new(&file_name, &section_path.join("/"));
+            let file = TestedFile::new(&(section_path.join("/")), &file_name);
 
             if section_path.is_empty() {
                 println!("Empty path");
