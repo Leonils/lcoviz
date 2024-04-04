@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use self::{tested_file::TestedFile, tested_module::TestedModule};
+use super::{tested_file::TestedFile, tested_module::TestedModule};
 
 #[derive(Debug, PartialEq, Default)]
 struct ReportTree {
@@ -52,132 +52,16 @@ impl ReportTree {
     }
 }
 
-mod tested_file {
-    use super::with_path::WithPath;
-
-    #[derive(Debug, PartialEq, Default)]
-    pub struct TestedFile {
-        file_name: String,
-        path: String,
-    }
-
-    impl TestedFile {
-        pub fn new(path: &str, file_name: &str) -> Self {
-            TestedFile {
-                file_name: String::from(file_name),
-                path: String::from(path),
-            }
-        }
-    }
-
-    impl WithPath for TestedFile {
-        fn get_path_string(&self) -> String {
-            self.path.clone()
-        }
-    }
-}
-
-mod tested_module {
-    use super::{tested_file::TestedFile, with_path::WithPath};
-
-    #[derive(Debug, PartialEq, Default)]
-    pub struct TestedModule {
-        name: String,
-        path: String,
-        source_files: Vec<TestedFile>,
-        modules: Vec<TestedModule>,
-    }
-
-    impl TestedModule {
-        pub fn new(path: String, name: String) -> Self {
-            TestedModule {
-                name,
-                path,
-                source_files: vec![],
-                modules: vec![],
-            }
-        }
-
-        pub fn get_name(&self) -> String {
-            self.name.clone()
-        }
-
-        pub fn add_file(&mut self, path: Vec<String>, file: TestedFile) {
-            if path.is_empty() {
-                self.source_files.push(file);
-                return;
-            }
-
-            let module_name = path[0].clone();
-            if let Some(existing_module) = self.modules.iter_mut().find(|m| m.name == module_name) {
-                existing_module.add_file(path[1..].to_vec(), file);
-                return;
-            }
-
-            let module = TestedModule::new(format!("{}/{}", self.path, module_name), module_name);
-            self.modules.push(module);
-            self.modules
-                .last_mut()
-                .unwrap()
-                .add_file(path[1..].to_vec(), file);
-        }
-    }
-
-    impl WithPath for TestedModule {
-        fn get_path_string(&self) -> String {
-            self.path.clone()
-        }
-    }
-
-    #[cfg(test)]
-    impl TestedModule {
-        pub fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self {
-            TestedModule {
-                name: String::from(name),
-                path: String::from(path),
-                source_files,
-                modules: vec![],
-            }
-        }
-
-        pub fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self {
-            TestedModule {
-                name: String::from(name),
-                path: String::from(path),
-                source_files: vec![],
-                modules,
-            }
-        }
-
-        pub fn get_module_at(&self, i: usize) -> &TestedModule {
-            self.modules.get(i).unwrap()
-        }
-
-        pub fn get_source_file_at(&self, i: usize) -> &TestedFile {
-            self.source_files.get(i).unwrap()
-        }
-    }
-}
-
-mod with_path {
-    pub trait WithPath {
-        fn get_path_string(&self) -> String;
-        fn get_path(&self) -> Vec<String> {
-            self.get_path_string()
-                .split('/')
-                .map(|s| s.to_string())
-                .collect()
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
 
-    use crate::report_tree::with_path::WithPath;
+    use crate::aggregation::with_path::WithPath;
 
-    use super::{ReportTree, TestedFile, TestedModule};
+    use super::{
+        super::{tested_file::TestedFile, tested_module::TestedModule},
+        ReportTree,
+    };
     use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
     trait FromStr {
@@ -190,13 +74,6 @@ mod test {
                 test_name: String::from(""),
             }
         }
-    }
-
-    trait FromSourceFile {
-        fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self;
-    }
-    trait FromModules {
-        fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self;
     }
 
     impl ReportTree {

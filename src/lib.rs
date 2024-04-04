@@ -15,7 +15,12 @@ pub mod styles {
     pub mod light;
 }
 
-pub mod report_tree;
+pub mod aggregation {
+    pub mod test_report;
+    mod tested_file;
+    mod tested_module;
+    mod with_path;
+}
 
 #[cfg(test)]
 pub mod mocks;
