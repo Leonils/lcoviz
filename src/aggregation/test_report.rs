@@ -54,27 +54,13 @@ impl ReportTree {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
-    use crate::aggregation::with_path::WithPath;
+    use crate::{aggregation::with_path::WithPath, test_utils::builders::FromStr};
 
     use super::{
         super::{tested_file::TestedFile, tested_module::TestedModule},
         ReportTree,
     };
     use lcov::report::section::{Key as SectionKey, Value as SectionValue};
-
-    trait FromStr {
-        fn from_str(text: &str) -> Self;
-    }
-    impl FromStr for lcov::report::section::Key {
-        fn from_str(text: &str) -> Self {
-            lcov::report::section::Key {
-                source_file: PathBuf::from(text),
-                test_name: String::from(""),
-            }
-        }
-    }
 
     impl ReportTree {
         fn from_source_files(source_files: Vec<TestedFile>) -> Self {

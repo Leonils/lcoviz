@@ -36,7 +36,7 @@ impl ToHtmlWithLinesProvider for Lines {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mocks::{MockComponentsFactory, MockFilesProvider};
+    use crate::test_utils::mocks::{MockComponentsFactory, MockFilesProvider};
     use lcov::report::section::line::{Key, Lines, Value};
     use std::collections::BTreeMap;
 

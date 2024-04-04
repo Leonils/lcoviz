@@ -24,4 +24,7 @@ pub mod aggregation {
 }
 
 #[cfg(test)]
-pub mod mocks;
+pub mod test_utils {
+    pub mod builders;
+    pub mod mocks;
+}
