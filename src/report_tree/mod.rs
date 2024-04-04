@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use self::{tested_file::TestedFile, tested_module::TestedModule};
+
 #[derive(Debug, PartialEq, Default)]
 struct ReportTree {
     modules: Vec<TestedModule>,
@@ -19,10 +21,7 @@ impl ReportTree {
             let section_path = Self::split_path(section_key.source_file);
 
             let file_name = section_path[section_path.len() - 1].clone();
-            let file = TestedFile {
-                file_name,
-                path: section_path.join("/"),
-            };
+            let file = TestedFile::new(&file_name, &section_path.join("/"));
 
             if section_path.is_empty() {
                 println!("Empty path");
@@ -36,7 +35,11 @@ impl ReportTree {
 
             let module_name = section_path[0].clone();
             let module_path_queue = section_path[1..section_path.len() - 1].to_vec();
-            if let Some(existing_module) = tree.modules.iter_mut().find(|m| m.name == module_name) {
+            if let Some(existing_module) = tree
+                .modules
+                .iter_mut()
+                .find(|m| m.get_name() == module_name)
+            {
                 existing_module.add_file(module_path_queue, file);
             } else {
                 let mut module = TestedModule::new(module_name.clone(), module_name);
@@ -49,61 +52,21 @@ impl ReportTree {
     }
 }
 
-#[derive(Debug, PartialEq, Default)]
-struct TestedFile {
-    file_name: String,
-    path: String,
-}
+mod tested_file {
+    use super::with_path::WithPath;
 
-#[derive(Debug, PartialEq, Default)]
-struct TestedModule {
-    name: String,
-    path: String,
-    source_files: Vec<TestedFile>,
-    modules: Vec<TestedModule>,
-}
-
-impl TestedModule {
-    fn new(path: String, name: String) -> Self {
-        TestedModule {
-            name,
-            path,
-            source_files: vec![],
-            modules: vec![],
-        }
+    #[derive(Debug, PartialEq, Default)]
+    pub struct TestedFile {
+        file_name: String,
+        path: String,
     }
 
-    fn add_file(&mut self, path: Vec<String>, file: TestedFile) {
-        if path.is_empty() {
-            self.source_files.push(file);
-            return;
-        }
-
-        let module_name = path[0].clone();
-        if let Some(existing_module) = self.modules.iter_mut().find(|m| m.name == module_name) {
-            existing_module.add_file(path[1..].to_vec(), file);
-            return;
-        }
-
-        let module = TestedModule::new(format!("{}/{}", self.path, module_name), module_name);
-        self.modules.push(module);
-        self.modules
-            .last_mut()
-            .unwrap()
-            .add_file(path[1..].to_vec(), file);
-    }
-}
-
-mod with_path {
-    use super::{TestedFile, TestedModule};
-
-    pub trait WithPath {
-        fn get_path_string(&self) -> String;
-        fn get_path(&self) -> Vec<String> {
-            self.get_path_string()
-                .split('/')
-                .map(|s| s.to_string())
-                .collect()
+    impl TestedFile {
+        pub fn new(path: &str, file_name: &str) -> Self {
+            TestedFile {
+                file_name: String::from(file_name),
+                path: String::from(path),
+            }
         }
     }
 
@@ -112,10 +75,98 @@ mod with_path {
             self.path.clone()
         }
     }
+}
+
+mod tested_module {
+    use super::{tested_file::TestedFile, with_path::WithPath};
+
+    #[derive(Debug, PartialEq, Default)]
+    pub struct TestedModule {
+        name: String,
+        path: String,
+        source_files: Vec<TestedFile>,
+        modules: Vec<TestedModule>,
+    }
+
+    impl TestedModule {
+        pub fn new(path: String, name: String) -> Self {
+            TestedModule {
+                name,
+                path,
+                source_files: vec![],
+                modules: vec![],
+            }
+        }
+
+        pub fn get_name(&self) -> String {
+            self.name.clone()
+        }
+
+        pub fn add_file(&mut self, path: Vec<String>, file: TestedFile) {
+            if path.is_empty() {
+                self.source_files.push(file);
+                return;
+            }
+
+            let module_name = path[0].clone();
+            if let Some(existing_module) = self.modules.iter_mut().find(|m| m.name == module_name) {
+                existing_module.add_file(path[1..].to_vec(), file);
+                return;
+            }
+
+            let module = TestedModule::new(format!("{}/{}", self.path, module_name), module_name);
+            self.modules.push(module);
+            self.modules
+                .last_mut()
+                .unwrap()
+                .add_file(path[1..].to_vec(), file);
+        }
+    }
 
     impl WithPath for TestedModule {
         fn get_path_string(&self) -> String {
             self.path.clone()
+        }
+    }
+
+    #[cfg(test)]
+    impl TestedModule {
+        pub fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self {
+            TestedModule {
+                name: String::from(name),
+                path: String::from(path),
+                source_files,
+                modules: vec![],
+            }
+        }
+
+        pub fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self {
+            TestedModule {
+                name: String::from(name),
+                path: String::from(path),
+                source_files: vec![],
+                modules,
+            }
+        }
+
+        pub fn get_module_at(&self, i: usize) -> &TestedModule {
+            self.modules.get(i).unwrap()
+        }
+
+        pub fn get_source_file_at(&self, i: usize) -> &TestedFile {
+            self.source_files.get(i).unwrap()
+        }
+    }
+}
+
+mod with_path {
+    pub trait WithPath {
+        fn get_path_string(&self) -> String;
+        fn get_path(&self) -> Vec<String> {
+            self.get_path_string()
+                .split('/')
+                .map(|s| s.to_string())
+                .collect()
         }
     }
 }
@@ -148,34 +199,6 @@ mod test {
         fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self;
     }
 
-    impl TestedFile {
-        fn new(path: &str, file_name: &str) -> Self {
-            TestedFile {
-                file_name: String::from(file_name),
-                path: String::from(path),
-            }
-        }
-    }
-    impl TestedModule {
-        fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self {
-            TestedModule {
-                name: String::from(name),
-                path: String::from(path),
-                source_files,
-                modules: vec![],
-            }
-        }
-    }
-    impl TestedModule {
-        fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self {
-            TestedModule {
-                name: String::from(name),
-                path: String::from(path),
-                source_files: vec![],
-                modules,
-            }
-        }
-    }
     impl ReportTree {
         fn from_source_files(source_files: Vec<TestedFile>) -> Self {
             ReportTree {
@@ -344,8 +367,8 @@ mod test {
         let report_tree = ReportTree::from_original_report(original_report);
 
         let package = report_tree.modules.get(0).unwrap();
-        let sub_package = package.modules.get(0).unwrap();
-        let file = sub_package.source_files.get(0).unwrap();
+        let sub_package = package.get_module_at(0);
+        let file = sub_package.get_source_file_at(0);
 
         assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
         assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
