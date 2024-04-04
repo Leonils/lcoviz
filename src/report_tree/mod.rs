@@ -55,12 +55,6 @@ struct TestedFile {
     path: String,
 }
 
-impl TestedFile {
-    fn get_path(&self) -> Vec<String> {
-        self.path.split('/').map(|s| s.to_string()).collect()
-    }
-}
-
 #[derive(Debug, PartialEq, Default)]
 struct TestedModule {
     name: String,
@@ -98,15 +92,39 @@ impl TestedModule {
             .unwrap()
             .add_file(path[1..].to_vec(), file);
     }
+}
 
-    fn get_path(&self) -> Vec<String> {
-        self.path.split('/').map(|s| s.to_string()).collect()
+mod with_path {
+    use super::{TestedFile, TestedModule};
+
+    pub trait WithPath {
+        fn get_path_string(&self) -> String;
+        fn get_path(&self) -> Vec<String> {
+            self.get_path_string()
+                .split('/')
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+
+    impl WithPath for TestedFile {
+        fn get_path_string(&self) -> String {
+            self.path.clone()
+        }
+    }
+
+    impl WithPath for TestedModule {
+        fn get_path_string(&self) -> String {
+            self.path.clone()
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
+
+    use crate::report_tree::with_path::WithPath;
 
     use super::{ReportTree, TestedFile, TestedModule};
     use lcov::report::section::{Key as SectionKey, Value as SectionValue};
