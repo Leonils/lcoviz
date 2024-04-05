@@ -1,3 +1,5 @@
+use lcov::report::section::{Key as SectionKey, Value as SectionValue};
+
 use super::{
     aggregated::Aggregated, tested_file::TestedFile, tested_module::TestedModule,
     with_path::WithPath,
@@ -13,37 +15,50 @@ struct ReportTree {
 impl ReportTree {
     pub fn from_original_report(report: lcov::report::Report) -> Self {
         let mut tree = ReportTree::default();
+
         for (section_key, section_value) in report.sections {
-            let file = TestedFile::from_section(section_key, section_value);
-            let section_path = file.get_path();
-
-            if section_path.is_empty() {
-                println!("Empty path");
-                continue;
-            }
-
-            tree.aggregated.add(&file.aggregated);
-            if section_path.len() == 1 {
-                tree.source_files.push(file);
-                continue;
-            }
-
-            let module_name = section_path[0].clone();
-            let module_path_queue = section_path[1..section_path.len() - 1].to_vec();
-            if let Some(existing_module) = tree
-                .modules
-                .iter_mut()
-                .find(|m| m.get_name() == module_name)
-            {
-                existing_module.add_file(module_path_queue, file);
-            } else {
-                let mut module = TestedModule::new(module_name.clone(), module_name);
-                module.add_file(module_path_queue, file);
-                tree.modules.push(module);
-            }
+            tree.add_file(section_key, section_value)
         }
 
         tree
+    }
+
+    fn find_module_by_name(&mut self, module_name: &str) -> Option<&mut TestedModule> {
+        self.modules
+            .iter_mut()
+            .find(|m| m.get_name() == module_name)
+    }
+
+    fn insert_new_module(&mut self, module_name: &str) -> &mut TestedModule {
+        let module = TestedModule::new(module_name.to_string(), module_name.to_string());
+        self.modules.push(module);
+        self.modules.last_mut().unwrap()
+    }
+
+    fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue) {
+        let file = TestedFile::from_section(section_key, section_value);
+        let section_path = file.get_path();
+
+        if section_path.is_empty() {
+            println!("Empty path");
+            return;
+        }
+
+        self.aggregated.add(&file.aggregated);
+        if section_path.len() == 1 {
+            self.source_files.push(file);
+            return;
+        }
+
+        let module_name = section_path[0].clone();
+        let module_path_queue = section_path[1..section_path.len() - 1].to_vec();
+
+        let target_module = match self.find_module_by_name(&module_name) {
+            Some(existing_module) => existing_module,
+            None => self.insert_new_module(&module_name),
+        };
+
+        target_module.add_file(module_path_queue, file);
     }
 }
 
