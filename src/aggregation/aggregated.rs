@@ -2,6 +2,10 @@
 pub struct Aggregated {
     pub lines_count: u32,
     pub covered_lines_count: u32,
+    pub functions_count: u32,
+    pub covered_functions_count: u32,
+    pub branches_count: u32,
+    pub covered_branches_count: u32,
 }
 
 impl Aggregated {
@@ -12,6 +16,10 @@ impl Aggregated {
     pub fn add(&mut self, other: &Self) {
         self.lines_count += other.lines_count;
         self.covered_lines_count += other.covered_lines_count;
+        self.functions_count += other.functions_count;
+        self.covered_functions_count += other.covered_functions_count;
+        self.branches_count += other.branches_count;
+        self.covered_branches_count += other.covered_branches_count;
     }
 
     pub fn from_section(value: lcov::report::section::Value) -> Self {
@@ -25,6 +33,7 @@ impl Aggregated {
         Self {
             lines_count,
             covered_lines_count,
+            ..Default::default()
         }
     }
 }
@@ -44,22 +53,38 @@ mod test {
     use super::Aggregated;
 
     #[test]
-    fn when_creating_an_aggregate_from_scratch_count_shall_be_0() {
+    fn when_creating_an_aggregate_from_scratch_line_count_shall_be_0() {
         let aggregated = super::Aggregated::new();
         assert_eq!(aggregated.lines_count, 0);
         assert_eq!(aggregated.covered_lines_count, 0);
     }
 
     #[test]
-    fn when_adding_an_aggregate_to_another_the_result_should_be_the_sum_of_both() {
+    fn when_creating_an_aggregate_from_scratch_function_count_shall_be_0() {
+        let aggregated = super::Aggregated::new();
+        assert_eq!(aggregated.functions_count, 0);
+        assert_eq!(aggregated.covered_functions_count, 0);
+    }
+
+    #[test]
+    fn when_creating_an_aggregate_from_scratch_branch_count_shall_be_0() {
+        let aggregated = super::Aggregated::new();
+        assert_eq!(aggregated.branches_count, 0);
+        assert_eq!(aggregated.covered_branches_count, 0);
+    }
+
+    #[test]
+    fn when_adding_an_aggregate_to_another_the_lines_result_should_be_the_sum_of_both() {
         let mut aggregated = super::Aggregated {
             lines_count: 10,
             covered_lines_count: 5,
+            ..Default::default()
         };
 
         let other = super::Aggregated {
             lines_count: 20,
             covered_lines_count: 10,
+            ..Default::default()
         };
 
         aggregated.add(&other);
@@ -71,7 +96,51 @@ mod test {
     }
 
     #[test]
-    fn when_creating_from_an_empty_section_it_shall_be_0() {
+    fn when_adding_an_aggregate_to_another_the_functions_result_should_be_the_sum_of_both() {
+        let mut aggregated = super::Aggregated {
+            functions_count: 10,
+            covered_functions_count: 5,
+            ..Default::default()
+        };
+
+        let other = super::Aggregated {
+            functions_count: 20,
+            covered_functions_count: 10,
+            ..Default::default()
+        };
+
+        aggregated.add(&other);
+
+        assert_eq!(aggregated.functions_count, 30);
+        assert_eq!(aggregated.covered_functions_count, 15);
+        assert_eq!(other.functions_count, 20);
+        assert_eq!(other.covered_functions_count, 10);
+    }
+
+    #[test]
+    fn when_adding_an_aggregate_to_another_the_branches_result_should_be_the_sum_of_both() {
+        let mut aggregated = super::Aggregated {
+            branches_count: 10,
+            covered_branches_count: 5,
+            ..Default::default()
+        };
+
+        let other = super::Aggregated {
+            branches_count: 20,
+            covered_branches_count: 10,
+            ..Default::default()
+        };
+
+        aggregated.add(&other);
+
+        assert_eq!(aggregated.branches_count, 30);
+        assert_eq!(aggregated.covered_branches_count, 15);
+        assert_eq!(other.branches_count, 20);
+        assert_eq!(other.covered_branches_count, 10);
+    }
+
+    #[test]
+    fn when_creating_from_an_empty_section_line_counts_shall_be_0() {
         let section_value = SectionValue::default();
 
         let aggregated = Aggregated::from_section(section_value);

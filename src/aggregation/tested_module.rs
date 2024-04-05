@@ -164,6 +164,7 @@ mod tests {
         let aggregated = Aggregated {
             lines_count: 10,
             covered_lines_count: 5,
+            ..Default::default()
         };
         let tested_file = TestedFile::with_aggregated("section/file.cpp", "file.cpp", aggregated);
         let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
@@ -181,6 +182,7 @@ mod tests {
             Aggregated {
                 lines_count: 10,
                 covered_lines_count: 5,
+                ..Default::default()
             },
         );
         let tested_file2 = TestedFile::with_aggregated(
@@ -189,6 +191,7 @@ mod tests {
             Aggregated {
                 lines_count: 3,
                 covered_lines_count: 1,
+                ..Default::default()
             },
         );
         let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
