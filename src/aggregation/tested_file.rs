@@ -49,7 +49,10 @@ impl TestedFile {
 
 #[cfg(test)]
 mod test {
-    use crate::{aggregation::aggregated::Aggregated, test_utils::builders::InsertLine};
+    use crate::{
+        aggregation::aggregated::Aggregated,
+        test_utils::builders::generate_3_lines_2_covered_section,
+    };
 
     use super::*;
 
@@ -97,12 +100,7 @@ mod test {
             test_name: String::from(""),
         };
 
-        let mut section_value = SectionValue::default();
-        section_value
-            .lines
-            .insert_line(1, 0)
-            .insert_line(2, 3)
-            .insert_line(3, 1);
+        let section_value = generate_3_lines_2_covered_section();
 
         let tested_file = TestedFile::from_section(key, section_value);
         assert_eq!(tested_file.aggregated.lines_count, 3);

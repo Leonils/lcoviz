@@ -30,6 +30,12 @@ impl Aggregated {
 }
 
 #[cfg(test)]
+pub fn assert_aggregate_eq(aggregated: &Aggregated, lines_count: u32, covered_lines_count: u32) {
+    assert_eq!(aggregated.lines_count, lines_count);
+    assert_eq!(aggregated.covered_lines_count, covered_lines_count);
+}
+
+#[cfg(test)]
 mod test {
     use lcov::report::section::Value as SectionValue;
 
