@@ -9,7 +9,7 @@ impl Aggregated {
         Default::default()
     }
 
-    fn add(&mut self, other: &Self) {
+    pub fn add(&mut self, other: &Self) {
         self.lines_count += other.lines_count;
         self.covered_lines_count += other.covered_lines_count;
     }

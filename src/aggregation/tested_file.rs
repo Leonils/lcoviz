@@ -6,7 +6,7 @@ use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 pub struct TestedFile {
     file_name: String,
     path: String,
-    aggregated: Aggregated,
+    pub aggregated: Aggregated,
 }
 
 impl TestedFile {
@@ -34,6 +34,16 @@ impl TestedFile {
 impl WithPath for TestedFile {
     fn get_path_string(&self) -> String {
         self.path.clone()
+    }
+}
+
+#[cfg(test)]
+impl TestedFile {
+    pub fn with_aggregated(path: &str, file_name: &str, aggregated: Aggregated) -> Self {
+        TestedFile {
+            aggregated,
+            ..TestedFile::new(path, file_name)
+        }
     }
 }
 

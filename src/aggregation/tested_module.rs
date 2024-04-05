@@ -1,4 +1,4 @@
-use super::{tested_file::TestedFile, with_path::WithPath};
+use super::{aggregated::Aggregated, tested_file::TestedFile, with_path::WithPath};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedModule {
@@ -6,6 +6,7 @@ pub struct TestedModule {
     path: String,
     source_files: Vec<TestedFile>,
     modules: Vec<TestedModule>,
+    aggregated: Aggregated,
 }
 
 impl TestedModule {
@@ -13,8 +14,7 @@ impl TestedModule {
         TestedModule {
             name,
             path,
-            source_files: vec![],
-            modules: vec![],
+            ..Default::default()
         }
     }
 
@@ -23,6 +23,8 @@ impl TestedModule {
     }
 
     pub fn add_file(&mut self, path: Vec<String>, file: TestedFile) {
+        self.aggregated.add(&file.aggregated);
+
         if path.is_empty() {
             self.source_files.push(file);
             return;
@@ -56,7 +58,7 @@ impl TestedModule {
             name: String::from(name),
             path: String::from(path),
             source_files,
-            modules: vec![],
+            ..Default::default()
         }
     }
 
@@ -64,8 +66,8 @@ impl TestedModule {
         TestedModule {
             name: String::from(name),
             path: String::from(path),
-            source_files: vec![],
             modules,
+            ..Default::default()
         }
     }
 
@@ -80,6 +82,8 @@ impl TestedModule {
 
 #[cfg(test)]
 mod tests {
+    use crate::aggregation::aggregated::{self, Aggregated};
+
     use super::*;
 
     #[test]
@@ -140,5 +144,65 @@ mod tests {
         assert_eq!(source_file.get_path_string(), "section/submodule/file.cpp");
         let source_file = module.get_source_file_at(1);
         assert_eq!(source_file.get_path_string(), "section/submodule/file2.cpp");
+    }
+
+    #[test]
+    fn when_creating_empty_module_it_should_have_aggregate_0() {
+        let tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        assert_eq!(tested_module.aggregated, Aggregated::default());
+    }
+
+    #[test]
+    fn when_creating_a_tested_module_with_empty_file_it_should_have_aggregate_0() {
+        let tested_file = TestedFile::new("section/file.cpp", "file.cpp");
+        let tested_module = TestedModule::from_source_files("section", "name", vec![tested_file]);
+        assert_eq!(tested_module.aggregated, Aggregated::default());
+    }
+
+    #[test]
+    fn when_creating_a_tested_module_with_one_file_it_should_get_same_aggregate() {
+        let aggregated = Aggregated {
+            lines_count: 10,
+            covered_lines_count: 5,
+        };
+        let tested_file = TestedFile::with_aggregated("section/file.cpp", "file.cpp", aggregated);
+        let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        tested_module.add_file(vec![], tested_file);
+
+        assert_eq!(tested_module.aggregated.lines_count, 10);
+        assert_eq!(tested_module.aggregated.covered_lines_count, 5);
+    }
+
+    #[test]
+    fn when_creating_a_tested_module_with_two_file_it_should_get_same_aggregate() {
+        // Create 2 files and add them to the module
+        let tested_file1 = TestedFile::with_aggregated(
+            "section/file.cpp",
+            "file.cpp",
+            Aggregated {
+                lines_count: 10,
+                covered_lines_count: 5,
+            },
+        );
+        let tested_file2 = TestedFile::with_aggregated(
+            "section/module/file2.cpp",
+            "file2.cpp",
+            Aggregated {
+                lines_count: 3,
+                covered_lines_count: 1,
+            },
+        );
+        let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
+        tested_module.add_file(vec![], tested_file1);
+        tested_module.add_file(vec!["module".to_string()], tested_file2);
+
+        // Check the aggregated values of the top module
+        assert_eq!(tested_module.aggregated.lines_count, 13);
+        assert_eq!(tested_module.aggregated.covered_lines_count, 6);
+
+        // Check the aggregated values of the inner module
+        let module = tested_module.get_module_at(0);
+        assert_eq!(module.aggregated.lines_count, 3);
+        assert_eq!(module.aggregated.covered_lines_count, 1);
     }
 }
