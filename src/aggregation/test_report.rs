@@ -1,11 +1,13 @@
-use std::path::PathBuf;
-
-use super::{tested_file::TestedFile, tested_module::TestedModule, with_path::WithPath};
+use super::{
+    aggregated::Aggregated, tested_file::TestedFile, tested_module::TestedModule,
+    with_path::WithPath,
+};
 
 #[derive(Debug, PartialEq, Default)]
 struct ReportTree {
     modules: Vec<TestedModule>,
     source_files: Vec<TestedFile>,
+    aggregated: Aggregated,
 }
 
 impl ReportTree {
@@ -46,7 +48,10 @@ impl ReportTree {
 
 #[cfg(test)]
 mod test {
-    use crate::{aggregation::with_path::WithPath, test_utils::builders::FromStr};
+    use crate::{
+        aggregation::{aggregated::Aggregated, with_path::WithPath},
+        test_utils::builders::{FromStr, InsertLine},
+    };
 
     use super::{
         super::{tested_file::TestedFile, tested_module::TestedModule},
@@ -228,5 +233,12 @@ mod test {
         assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
         assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
         assert_eq!(package.get_path(), vec!["package"]);
+    }
+
+    #[test]
+    fn when_building_tree_with_an_empty_report_it_should_get_0_aggregates() {
+        let original_report = lcov::report::Report::new();
+        let report_tree = ReportTree::from_original_report(original_report);
+        assert_eq!(Aggregated::default(), report_tree.aggregated);
     }
 }

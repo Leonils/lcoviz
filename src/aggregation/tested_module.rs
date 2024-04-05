@@ -82,7 +82,7 @@ impl TestedModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::aggregation::aggregated::{self, Aggregated};
+    use crate::aggregation::aggregated::Aggregated;
 
     use super::*;
 

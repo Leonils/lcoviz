@@ -31,10 +31,9 @@ impl Aggregated {
 
 #[cfg(test)]
 mod test {
-    use lcov::report::section::line::{Key as LineKey, Value as LineValue};
-    use lcov::report::section::{Key as SectionKey, Value as SectionValue};
+    use lcov::report::section::Value as SectionValue;
 
-    use crate::test_utils::builders::{FromCount, FromLineNumber, FromStr, InsertLine};
+    use crate::test_utils::builders::InsertLine;
 
     use super::Aggregated;
 
