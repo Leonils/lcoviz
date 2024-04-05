@@ -30,10 +30,27 @@ impl Aggregated {
             .filter(|(_, value)| value.count > 0)
             .count() as u32;
 
+        let functions_count = value.functions.len() as u32;
+        let covered_functions_count = value
+            .functions
+            .iter()
+            .filter(|(_, value)| value.count > 0)
+            .count() as u32;
+
+        let branches_count = value.branches.len() as u32;
+        let covered_branches_count = value
+            .branches
+            .iter()
+            .filter(|(_, value)| value.taken.is_some_and(|taken| taken > 0))
+            .count() as u32;
+
         Self {
             lines_count,
             covered_lines_count,
-            ..Default::default()
+            functions_count,
+            covered_functions_count,
+            branches_count,
+            covered_branches_count,
         }
     }
 }
@@ -48,7 +65,7 @@ pub fn assert_aggregate_eq(aggregated: &Aggregated, lines_count: u32, covered_li
 mod test {
     use lcov::report::section::Value as SectionValue;
 
-    use crate::test_utils::builders::InsertLine;
+    use crate::test_utils::builders::{InsertBranch, InsertFunction, InsertLine};
 
     use super::Aggregated;
 
@@ -149,6 +166,24 @@ mod test {
     }
 
     #[test]
+    fn when_creating_from_an_empty_section_function_counts_shall_be_0() {
+        let section_value = SectionValue::default();
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.functions_count, 0);
+        assert_eq!(aggregated.covered_functions_count, 0);
+    }
+
+    #[test]
+    fn when_creating_from_an_empty_section_branch_counts_shall_be_0() {
+        let section_value = SectionValue::default();
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.branches_count, 0);
+        assert_eq!(aggregated.covered_branches_count, 0);
+    }
+
+    #[test]
     fn when_creating_from_a_section_with_1_line_3_hit_it_shall_be_1_1() {
         let mut section_value = SectionValue::default();
         section_value.lines.insert_line(1, 3);
@@ -159,6 +194,26 @@ mod test {
     }
 
     #[test]
+    fn when_creating_from_a_section_with_1_function_3_hit_it_shall_be_1_1() {
+        let mut section_value = SectionValue::default();
+        section_value.functions.insert_function("f", 3);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.functions_count, 1);
+        assert_eq!(aggregated.covered_functions_count, 1);
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_1_branch_3_hit_it_shall_be_1_1() {
+        let mut section_value = SectionValue::default();
+        section_value.branches.insert_branch(1, 3);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.branches_count, 1);
+        assert_eq!(aggregated.covered_branches_count, 1);
+    }
+
+    #[test]
     fn when_creating_from_a_section_with_1_line_0_hit_it_shall_be_1_0() {
         let mut section_value = SectionValue::default();
         section_value.lines.insert_line(1, 0);
@@ -166,6 +221,26 @@ mod test {
         let aggregated = Aggregated::from_section(section_value);
         assert_eq!(aggregated.lines_count, 1);
         assert_eq!(aggregated.covered_lines_count, 0);
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_1_function_0_hit_it_shall_be_1_0() {
+        let mut section_value = SectionValue::default();
+        section_value.functions.insert_function("f", 0);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.functions_count, 1);
+        assert_eq!(aggregated.covered_functions_count, 0);
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_1_branch_0_hit_it_shall_be_1_0() {
+        let mut section_value = SectionValue::default();
+        section_value.branches.insert_branch(1, 0);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.branches_count, 1);
+        assert_eq!(aggregated.covered_branches_count, 0);
     }
 
     #[test]
@@ -180,5 +255,33 @@ mod test {
         let aggregated = Aggregated::from_section(section_value);
         assert_eq!(aggregated.lines_count, 3);
         assert_eq!(aggregated.covered_lines_count, 2);
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_3_functions_2_covered_it_shall_be_3_2() {
+        let mut section_value = SectionValue::default();
+        section_value
+            .functions
+            .insert_function("f1", 0)
+            .insert_function("f2", 3)
+            .insert_function("f3", 1);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.functions_count, 3);
+        assert_eq!(aggregated.covered_functions_count, 2);
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_3_branches_2_covered_it_shall_be_3_2() {
+        let mut section_value = SectionValue::default();
+        section_value
+            .branches
+            .insert_branch(1, 0)
+            .insert_branch(2, 3)
+            .insert_branch(3, 1);
+
+        let aggregated = Aggregated::from_section(section_value);
+        assert_eq!(aggregated.branches_count, 3);
+        assert_eq!(aggregated.covered_branches_count, 2);
     }
 }

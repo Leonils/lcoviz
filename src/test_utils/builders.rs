@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use lcov::report::{
     section::{
+        branch::{Branches, Key as BranchKey, Value as BranchValue},
+        function::{Functions, Key as FunctionKey, Value as FunctionValue},
         line::{Key as LineKey, Lines, Value as LineValue},
         Key as SectionKey, Value as SectionValue,
     },
@@ -21,6 +23,14 @@ pub trait FromCount {
 
 pub trait InsertLine {
     fn insert_line(&mut self, line_number: u32, count: u64) -> &mut Self;
+}
+
+pub trait InsertFunction {
+    fn insert_function(&mut self, name: &str, count: u64) -> &mut Self;
+}
+
+pub trait InsertBranch {
+    fn insert_branch(&mut self, line_number: u32, count: u64) -> &mut Self;
 }
 
 pub trait InsertSection {
@@ -57,6 +67,38 @@ impl InsertLine for Lines {
         self.insert(
             LineKey::from_line_number(line_number),
             LineValue::from_count(count),
+        );
+        self
+    }
+}
+
+impl InsertFunction for Functions {
+    fn insert_function(&mut self, name: &str, count: u64) -> &mut Self {
+        self.insert(
+            FunctionKey {
+                name: String::from(name),
+            },
+            FunctionValue {
+                count,
+                ..Default::default()
+            },
+        );
+        self
+    }
+}
+
+impl InsertBranch for Branches {
+    fn insert_branch(&mut self, line: u32, count: u64) -> &mut Self {
+        self.insert(
+            BranchKey {
+                line,
+                block: 0,
+                branch: 0,
+            },
+            BranchValue {
+                taken: Some(count),
+                ..Default::default()
+            },
         );
         self
     }
