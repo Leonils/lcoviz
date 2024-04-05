@@ -22,6 +22,7 @@ impl ReportTree {
                 continue;
             }
 
+            tree.aggregated.add(&file.aggregated);
             if section_path.len() == 1 {
                 tree.source_files.push(file);
                 continue;
@@ -240,5 +241,86 @@ mod test {
         let original_report = lcov::report::Report::new();
         let report_tree = ReportTree::from_original_report(original_report);
         assert_eq!(Aggregated::default(), report_tree.aggregated);
+    }
+
+    #[test]
+    fn when_building_tree_with_a_top_level_file_with_coverage_data_it_should_get_the_same_aggregate(
+    ) {
+        let mut original_report = lcov::report::Report::new();
+        let mut section_value = SectionValue::default();
+        section_value
+            .lines
+            .insert_line(1, 3)
+            .insert_line(2, 0)
+            .insert_line(3, 1);
+        original_report
+            .sections
+            .insert(SectionKey::from_str("main.cpp"), section_value);
+
+        let report_tree = ReportTree::from_original_report(original_report);
+        let tested_file = report_tree.source_files.get(0).unwrap();
+
+        assert_eq!(tested_file.aggregated.lines_count, 3);
+        assert_eq!(tested_file.aggregated.covered_lines_count, 2);
+
+        assert_eq!(report_tree.aggregated.lines_count, 3);
+        assert_eq!(report_tree.aggregated.covered_lines_count, 2);
+    }
+
+    #[test]
+    fn when_building_tree_with_a_nested_file_with_coverage_data_it_should_get_the_aggregate_all_along(
+    ) {
+        let mut original_report = lcov::report::Report::new();
+
+        // File 1: 3 lines, 2 covered
+        let mut section_value = SectionValue::default();
+        section_value
+            .lines
+            .insert_line(1, 3)
+            .insert_line(2, 0)
+            .insert_line(3, 1);
+        original_report.sections.insert(
+            SectionKey::from_str("module1/sub-module/main.cpp"),
+            section_value,
+        );
+
+        // File 2: 2 lines, 1 covered
+        let mut section_value = SectionValue::default();
+        section_value.lines.insert_line(1, 3).insert_line(2, 0);
+        original_report
+            .sections
+            .insert(SectionKey::from_str("module2/main.cpp"), section_value);
+
+        // Add the 2 files
+        let report_tree = ReportTree::from_original_report(original_report);
+
+        // Check the aggregate for report
+        assert_eq!(report_tree.aggregated.lines_count, 5);
+        assert_eq!(report_tree.aggregated.covered_lines_count, 3);
+
+        // Check the aggregate for module1
+        let module1 = report_tree.modules.get(0).unwrap();
+        assert_eq!(module1.aggregated.lines_count, 3);
+        assert_eq!(module1.aggregated.covered_lines_count, 2);
+
+        // Check the aggregate for module1/sub-module
+        let sub_module1 = module1.get_module_at(0);
+        assert_eq!(sub_module1.aggregated.lines_count, 3);
+        assert_eq!(sub_module1.aggregated.covered_lines_count, 2);
+
+        // Check the aggregated for module1/sub-module/main.cpp
+        let file1 = sub_module1.get_source_file_at(0);
+        assert_eq!(file1.aggregated.lines_count, 3);
+        assert_eq!(file1.aggregated.covered_lines_count, 2);
+
+        // Check the aggregate for module2
+        let module2 = report_tree.modules.get(1).unwrap();
+        assert_eq!(module2.aggregated.lines_count, 2);
+        assert_eq!(module2.aggregated.covered_lines_count, 1);
+
+        // Check the aggregate for module2/main.cpp
+        let file2 = module2.get_source_file_at(0);
+        assert_eq!(file2.aggregated.lines_count, 2);
+        assert_eq!(file2.aggregated.covered_lines_count, 1);
     }
 }

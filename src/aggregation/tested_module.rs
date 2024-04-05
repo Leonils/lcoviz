@@ -6,7 +6,7 @@ pub struct TestedModule {
     path: String,
     source_files: Vec<TestedFile>,
     modules: Vec<TestedModule>,
-    aggregated: Aggregated,
+    pub aggregated: Aggregated,
 }
 
 impl TestedModule {
