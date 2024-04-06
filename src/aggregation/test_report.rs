@@ -83,7 +83,7 @@ impl ReportTree {
 mod test {
     use crate::{
         aggregation::{
-            aggregated::{assert_aggregate_eq, Aggregated},
+            aggregated::{assert_lines_aggregate_eq, Aggregated},
             with_path::WithPath,
         },
         test_utils::builders::{
@@ -248,8 +248,8 @@ mod test {
         let report_tree = ReportTree::from_original_report(original_report);
         let tested_file = report_tree.source_files.get(0).unwrap();
 
-        assert_aggregate_eq(&tested_file.aggregated, 3, 2);
-        assert_aggregate_eq(&report_tree.aggregated, 3, 2);
+        assert_lines_aggregate_eq(&tested_file.aggregated, 3, 2);
+        assert_lines_aggregate_eq(&report_tree.aggregated, 3, 2);
     }
 
     #[test]
@@ -271,11 +271,11 @@ mod test {
         let sub_module1 = module1.get_module_at(0);
         let module2 = report_tree.modules.get(1).unwrap();
 
-        assert_aggregate_eq(&report_tree.aggregated, 5, 3);
-        assert_aggregate_eq(&module1.aggregated, 3, 2);
-        assert_aggregate_eq(&sub_module1.aggregated, 3, 2);
-        assert_aggregate_eq(&sub_module1.get_source_file_at(0).aggregated, 3, 2);
-        assert_aggregate_eq(&module2.aggregated, 2, 1);
-        assert_aggregate_eq(&module2.get_source_file_at(0).aggregated, 2, 1);
+        assert_lines_aggregate_eq(&report_tree.aggregated, 5, 3);
+        assert_lines_aggregate_eq(&module1.aggregated, 3, 2);
+        assert_lines_aggregate_eq(&sub_module1.aggregated, 3, 2);
+        assert_lines_aggregate_eq(&sub_module1.get_source_file_at(0).aggregated, 3, 2);
+        assert_lines_aggregate_eq(&module2.aggregated, 2, 1);
+        assert_lines_aggregate_eq(&module2.get_source_file_at(0).aggregated, 2, 1);
     }
 }

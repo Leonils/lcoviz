@@ -21,6 +21,9 @@ pub mod aggregation {
     mod tested_file;
     mod tested_module;
     mod with_path;
+
+    #[cfg(test)]
+    pub mod fixtures;
 }
 
 mod views {

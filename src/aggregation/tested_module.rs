@@ -82,7 +82,7 @@ impl TestedModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::aggregation::aggregated::{assert_aggregate_eq, Aggregated};
+    use crate::aggregation::aggregated::{assert_lines_aggregate_eq, Aggregated};
 
     use super::*;
 
@@ -170,7 +170,7 @@ mod tests {
         let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
         tested_module.add_file(vec![], tested_file);
 
-        assert_aggregate_eq(&tested_module.aggregated, 10, 5);
+        assert_lines_aggregate_eq(&tested_module.aggregated, 10, 5);
     }
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
 
         // Check the aggregated values of the top module
         let module = tested_module.get_module_at(0);
-        assert_aggregate_eq(&tested_module.aggregated, 13, 6);
-        assert_aggregate_eq(&module.aggregated, 3, 1);
+        assert_lines_aggregate_eq(&tested_module.aggregated, 13, 6);
+        assert_lines_aggregate_eq(&module.aggregated, 3, 1);
     }
 }
