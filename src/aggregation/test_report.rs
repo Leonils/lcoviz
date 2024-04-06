@@ -6,7 +6,7 @@ use super::{
 };
 
 #[derive(Debug, PartialEq, Default)]
-struct ReportTree {
+pub struct ReportTree {
     modules: Vec<TestedModule>,
     source_files: Vec<TestedFile>,
     aggregated: Aggregated,
@@ -63,6 +63,23 @@ impl ReportTree {
 }
 
 #[cfg(test)]
+impl ReportTree {
+    pub fn from_source_files(source_files: Vec<TestedFile>) -> Self {
+        ReportTree {
+            source_files,
+            ..Default::default()
+        }
+    }
+
+    pub fn from_modules(modules: Vec<TestedModule>) -> Self {
+        ReportTree {
+            modules,
+            ..Default::default()
+        }
+    }
+}
+
+#[cfg(test)]
 mod test {
     use crate::{
         aggregation::{
@@ -80,23 +97,6 @@ mod test {
         ReportTree,
     };
     use lcov::report::{section::Key as SectionKey, Report as LcovReport};
-
-    impl ReportTree {
-        fn from_source_files(source_files: Vec<TestedFile>) -> Self {
-            ReportTree {
-                source_files,
-                ..Default::default()
-            }
-        }
-    }
-    impl ReportTree {
-        fn from_modules(modules: Vec<TestedModule>) -> Self {
-            ReportTree {
-                modules,
-                ..Default::default()
-            }
-        }
-    }
 
     #[test]
     fn when_building_tree_with_an_empty_report_it_should_get_an_empty_report() {

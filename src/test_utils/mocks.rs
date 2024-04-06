@@ -26,6 +26,10 @@ impl FileLinesProvider for MockFilesProvider {
 // Mock components factory
 pub struct MockComponentsFactory;
 impl ComponentsFactory for MockComponentsFactory {
+    fn create_header(&self, title: &str) -> HtmlNode {
+        return HtmlNode::h1(title);
+    }
+
     fn create_code(&self, lines: Vec<HtmlNode>) -> HtmlNode {
         let mut container = HtmlNode::div();
         for line in lines {

@@ -38,6 +38,12 @@ impl HtmlNode {
         HtmlNode::Text(text.to_string())
     }
 
+    pub fn h1(text: &str) -> Self {
+        let mut h1 = HtmlNode::new("h1");
+        h1.add_child(HtmlNode::text(text));
+        h1
+    }
+
     pub fn new(tag: &str) -> Self {
         HtmlNode::Tag(HtmlTag::new(tag))
     }

@@ -23,6 +23,10 @@ pub mod aggregation {
     mod with_path;
 }
 
+mod views {
+    mod index;
+}
+
 #[cfg(test)]
 pub mod test_utils {
     pub mod builders;
