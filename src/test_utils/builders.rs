@@ -2,9 +2,9 @@ use std::path::PathBuf;
 
 use lcov::report::{
     section::{
-        branch::{Branches, Key as BranchKey, Value as BranchValue},
-        function::{Functions, Key as FunctionKey, Value as FunctionValue},
-        line::{Key as LineKey, Lines, Value as LineValue},
+        branch::{Key as BranchKey, Value as BranchValue},
+        function::{Key as FunctionKey, Value as FunctionValue},
+        line::{Key as LineKey, Value as LineValue},
         Key as SectionKey, Value as SectionValue,
     },
     Report,
@@ -22,15 +22,15 @@ pub trait FromCount {
 }
 
 pub trait InsertLine {
-    fn insert_line(&mut self, line_number: u32, count: u64) -> &mut Self;
+    fn insert_line(self, line_number: u32, count: u64) -> Self;
 }
 
 pub trait InsertFunction {
-    fn insert_function(&mut self, name: &str, count: u64) -> &mut Self;
+    fn insert_function(self, name: &str, count: u64) -> Self;
 }
 
 pub trait InsertBranch {
-    fn insert_branch(&mut self, line_number: u32, count: u64) -> &mut Self;
+    fn insert_branch(self, line_number: u32, count: u64) -> Self;
 }
 
 pub trait InsertSection {
@@ -62,9 +62,9 @@ impl FromCount for LineValue {
     }
 }
 
-impl InsertLine for Lines {
-    fn insert_line(&mut self, line_number: u32, count: u64) -> &mut Self {
-        self.insert(
+impl InsertLine for SectionValue {
+    fn insert_line(mut self, line_number: u32, count: u64) -> Self {
+        self.lines.insert(
             LineKey::from_line_number(line_number),
             LineValue::from_count(count),
         );
@@ -72,9 +72,9 @@ impl InsertLine for Lines {
     }
 }
 
-impl InsertFunction for Functions {
-    fn insert_function(&mut self, name: &str, count: u64) -> &mut Self {
-        self.insert(
+impl InsertFunction for SectionValue {
+    fn insert_function(mut self, name: &str, count: u64) -> Self {
+        self.functions.insert(
             FunctionKey {
                 name: String::from(name),
             },
@@ -87,9 +87,9 @@ impl InsertFunction for Functions {
     }
 }
 
-impl InsertBranch for Branches {
-    fn insert_branch(&mut self, line: u32, count: u64) -> &mut Self {
-        self.insert(
+impl InsertBranch for SectionValue {
+    fn insert_branch(mut self, line: u32, count: u64) -> Self {
+        self.branches.insert(
             BranchKey {
                 line,
                 block: 0,
@@ -116,17 +116,12 @@ impl InsertSection for Report {
 }
 
 pub fn generate_3_lines_2_covered_section() -> SectionValue {
-    let mut section_value = SectionValue::default();
-    section_value
-        .lines
+    SectionValue::default()
         .insert_line(1, 3)
         .insert_line(2, 0)
-        .insert_line(3, 1);
-    section_value
+        .insert_line(3, 1)
 }
 
 pub fn generate_2_lines_1_covered_section() -> SectionValue {
-    let mut section_value = SectionValue::default();
-    section_value.lines.insert_line(1, 3).insert_line(2, 0);
-    section_value
+    SectionValue::default().insert_line(1, 3).insert_line(2, 0)
 }
