@@ -1,20 +1,22 @@
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
-use super::{
-    aggregated::Aggregated, tested_file::TestedFile, tested_module::TestedModule,
-    with_path::WithPath,
-};
+use crate::core::AggregatedCoverage;
+
+use super::{tested_file::TestedFile, tested_module::TestedModule, with_path::WithPath};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct ReportTree {
     modules: Vec<TestedModule>,
     source_files: Vec<TestedFile>,
-    aggregated: Aggregated,
+    aggregated: AggregatedCoverage,
 }
 
 impl ReportTree {
     pub fn from_original_report(report: lcov::report::Report) -> Self {
-        let mut tree = ReportTree::default();
+        let mut tree = ReportTree {
+            aggregated: AggregatedCoverage::new(),
+            ..Default::default()
+        };
 
         for (section_key, section_value) in report.sections {
             tree.add_file(section_key, section_value)
@@ -66,15 +68,17 @@ impl ReportTree {
 impl ReportTree {
     pub fn from_source_files(source_files: Vec<TestedFile>) -> Self {
         ReportTree {
+            aggregated: AggregatedCoverage::new(),
+            modules: vec![],
             source_files,
-            ..Default::default()
         }
     }
 
     pub fn from_modules(modules: Vec<TestedModule>) -> Self {
         ReportTree {
+            aggregated: AggregatedCoverage::new(),
             modules,
-            ..Default::default()
+            source_files: vec![],
         }
     }
 }
@@ -82,10 +86,7 @@ impl ReportTree {
 #[cfg(test)]
 mod test {
     use crate::{
-        aggregation::{
-            aggregated::{assert_lines_aggregate_eq, Aggregated},
-            with_path::WithPath,
-        },
+        aggregation::{aggregated::assert_aggregated_counters_eq, with_path::WithPath},
         test_utils::builders::{
             generate_2_lines_1_covered_section, generate_3_lines_2_covered_section, FromStr,
             InsertSection,
@@ -234,7 +235,10 @@ mod test {
     fn when_building_tree_with_an_empty_report_it_should_get_0_aggregates() {
         let original_report = LcovReport::new();
         let report_tree = ReportTree::from_original_report(original_report);
-        assert_eq!(Aggregated::default(), report_tree.aggregated);
+
+        assert_aggregated_counters_eq(&report_tree.aggregated.lines, 0, 0);
+        assert_aggregated_counters_eq(&report_tree.aggregated.functions, 0, 0);
+        assert_aggregated_counters_eq(&report_tree.aggregated.branches, 0, 0);
     }
 
     #[test]
@@ -248,8 +252,8 @@ mod test {
         let report_tree = ReportTree::from_original_report(original_report);
         let tested_file = report_tree.source_files.get(0).unwrap();
 
-        assert_lines_aggregate_eq(&tested_file.aggregated, 3, 2);
-        assert_lines_aggregate_eq(&report_tree.aggregated, 3, 2);
+        assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
+        assert_aggregated_counters_eq(&report_tree.aggregated.lines, 3, 2);
     }
 
     #[test]
@@ -271,11 +275,11 @@ mod test {
         let sub_module1 = module1.get_module_at(0);
         let module2 = report_tree.modules.get(1).unwrap();
 
-        assert_lines_aggregate_eq(&report_tree.aggregated, 5, 3);
-        assert_lines_aggregate_eq(&module1.aggregated, 3, 2);
-        assert_lines_aggregate_eq(&sub_module1.aggregated, 3, 2);
-        assert_lines_aggregate_eq(&sub_module1.get_source_file_at(0).aggregated, 3, 2);
-        assert_lines_aggregate_eq(&module2.aggregated, 2, 1);
-        assert_lines_aggregate_eq(&module2.get_source_file_at(0).aggregated, 2, 1);
+        assert_aggregated_counters_eq(&report_tree.aggregated.lines, 5, 3);
+        assert_aggregated_counters_eq(&module1.aggregated.lines, 3, 2);
+        assert_aggregated_counters_eq(&sub_module1.aggregated.lines, 3, 2);
+        assert_aggregated_counters_eq(&sub_module1.get_source_file_at(0).aggregated.lines, 3, 2);
+        assert_aggregated_counters_eq(&module2.aggregated.lines, 2, 1);
+        assert_aggregated_counters_eq(&module2.get_source_file_at(0).aggregated.lines, 2, 1);
     }
 }

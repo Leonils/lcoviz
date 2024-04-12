@@ -1,12 +1,13 @@
+use crate::core::AggregatedCoverage;
+
 use super::with_path::WithPath;
-use crate::aggregation::aggregated::Aggregated;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedFile {
     file_name: String,
     path: String,
-    pub aggregated: Aggregated,
+    pub aggregated: AggregatedCoverage,
 }
 
 impl TestedFile {
@@ -14,14 +15,14 @@ impl TestedFile {
         TestedFile {
             file_name: String::from(file_name),
             path: String::from(path),
-            aggregated: Aggregated::default(),
+            aggregated: AggregatedCoverage::default(),
         }
     }
 
     pub fn from_section(key: SectionKey, value: SectionValue) -> Self {
         let path = key.source_file.to_str().unwrap().to_string();
         let file_name = path.split('/').last().unwrap().to_string();
-        let aggregated = Aggregated::from_section(value);
+        let aggregated = AggregatedCoverage::from_section(value);
 
         TestedFile {
             file_name,
@@ -39,7 +40,7 @@ impl WithPath for TestedFile {
 
 #[cfg(test)]
 impl TestedFile {
-    pub fn with_aggregated(path: &str, file_name: &str, aggregated: Aggregated) -> Self {
+    pub fn with_aggregated(path: &str, file_name: &str, aggregated: AggregatedCoverage) -> Self {
         TestedFile {
             aggregated,
             ..TestedFile::new(path, file_name)
@@ -50,7 +51,7 @@ impl TestedFile {
 #[cfg(test)]
 mod test {
     use crate::{
-        aggregation::aggregated::{assert_lines_aggregate_eq, Aggregated},
+        aggregation::aggregated::assert_aggregated_counters_eq,
         test_utils::builders::generate_3_lines_2_covered_section,
     };
 
@@ -59,7 +60,7 @@ mod test {
     #[test]
     fn when_creating_a_tested_file_the_aggregated_count_should_be_0() {
         let tested_file = TestedFile::new("path", "file");
-        assert_eq!(tested_file.aggregated, Aggregated::default());
+        assert_eq!(tested_file.aggregated, AggregatedCoverage::default());
     }
 
     #[test]
@@ -89,7 +90,7 @@ mod test {
         let value = SectionValue::default();
 
         let tested_file = TestedFile::from_section(key, value);
-        assert_lines_aggregate_eq(&tested_file.aggregated, 0, 0);
+        assert_aggregated_counters_eq(&tested_file.aggregated.lines, 0, 0);
     }
 
     #[test]
@@ -102,6 +103,6 @@ mod test {
         let section_value = generate_3_lines_2_covered_section();
 
         let tested_file = TestedFile::from_section(key, section_value);
-        assert_lines_aggregate_eq(&tested_file.aggregated, 3, 2);
+        assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
     }
 }

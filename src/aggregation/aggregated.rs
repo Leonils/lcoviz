@@ -1,25 +1,40 @@
-#[derive(Debug, PartialEq, Default)]
-pub struct Aggregated {
-    pub lines_count: u32,
-    pub covered_lines_count: u32,
-    pub functions_count: u32,
-    pub covered_functions_count: u32,
-    pub branches_count: u32,
-    pub covered_branches_count: u32,
+// struct AggregatedCoverageCounters {
+//     count: u32,
+//     covered_count: u32,
+// }
+
+// #[derive(Debug, PartialEq, Default)]
+// pub struct Aggregated {
+//     pub lines_count: u32,
+//     pub covered_lines_count: u32,
+//     pub functions_count: u32,
+//     pub covered_functions_count: u32,
+//     pub branches_count: u32,
+//     pub covered_branches_count: u32,
+// }
+
+use crate::core::{AggregatedCoverage, AggregatedCoverageCounters};
+
+impl AggregatedCoverageCounters {
+    pub fn add(&mut self, other: &Self) {
+        self.count += other.count;
+        self.covered_count += other.covered_count;
+    }
 }
 
-impl Aggregated {
-    fn new() -> Self {
-        Default::default()
+impl AggregatedCoverage {
+    pub fn new() -> Self {
+        Self {
+            lines: AggregatedCoverageCounters::default(),
+            functions: AggregatedCoverageCounters::default(),
+            branches: AggregatedCoverageCounters::default(),
+        }
     }
 
     pub fn add(&mut self, other: &Self) {
-        self.lines_count += other.lines_count;
-        self.covered_lines_count += other.covered_lines_count;
-        self.functions_count += other.functions_count;
-        self.covered_functions_count += other.covered_functions_count;
-        self.branches_count += other.branches_count;
-        self.covered_branches_count += other.covered_branches_count;
+        self.lines.add(&other.lines);
+        self.functions.add(&other.functions);
+        self.branches.add(&other.branches);
     }
 
     pub fn from_section(value: lcov::report::section::Value) -> Self {
@@ -45,44 +60,30 @@ impl Aggregated {
             .count() as u32;
 
         Self {
-            lines_count,
-            covered_lines_count,
-            functions_count,
-            covered_functions_count,
-            branches_count,
-            covered_branches_count,
+            lines: AggregatedCoverageCounters {
+                count: lines_count,
+                covered_count: covered_lines_count,
+            },
+            functions: AggregatedCoverageCounters {
+                count: functions_count,
+                covered_count: covered_functions_count,
+            },
+            branches: AggregatedCoverageCounters {
+                count: branches_count,
+                covered_count: covered_branches_count,
+            },
         }
     }
 }
 
 #[cfg(test)]
-pub fn assert_lines_aggregate_eq(
-    aggregated: &Aggregated,
-    lines_count: u32,
-    covered_lines_count: u32,
+pub fn assert_aggregated_counters_eq(
+    counters: &AggregatedCoverageCounters,
+    count: u32,
+    covered_count: u32,
 ) {
-    assert_eq!(aggregated.lines_count, lines_count);
-    assert_eq!(aggregated.covered_lines_count, covered_lines_count);
-}
-
-#[cfg(test)]
-pub fn assert_functions_aggregate_eq(
-    aggregated: &Aggregated,
-    functions_count: u32,
-    covered_functions_count: u32,
-) {
-    assert_eq!(aggregated.functions_count, functions_count);
-    assert_eq!(aggregated.covered_functions_count, covered_functions_count);
-}
-
-#[cfg(test)]
-pub fn assert_branches_aggregate_eq(
-    aggregated: &Aggregated,
-    branches_count: u32,
-    covered_branches_count: u32,
-) {
-    assert_eq!(aggregated.branches_count, branches_count);
-    assert_eq!(aggregated.covered_branches_count, covered_branches_count);
+    assert_eq!(counters.count, count);
+    assert_eq!(counters.covered_count, covered_count);
 }
 
 #[cfg(test)]
@@ -90,28 +91,29 @@ mod test {
     use lcov::report::section::Value as SectionValue;
 
     use crate::{
-        aggregation::{aggregated::assert_branches_aggregate_eq, fixtures::AggregatedFixtures},
+        aggregation::fixtures::AggregatedFixtures,
+        core::AggregatedCoverage,
         test_utils::builders::{InsertBranch, InsertFunction, InsertLine},
     };
 
-    use super::{assert_functions_aggregate_eq, assert_lines_aggregate_eq, Aggregated};
+    use super::assert_aggregated_counters_eq;
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_line_count_shall_be_0() {
-        let aggregated = super::Aggregated::new();
-        assert_lines_aggregate_eq(&aggregated, 0, 0);
+        let aggregated = AggregatedCoverage::new();
+        assert_aggregated_counters_eq(&aggregated.lines, 0, 0);
     }
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_function_count_shall_be_0() {
-        let aggregated = super::Aggregated::new();
-        assert_functions_aggregate_eq(&aggregated, 0, 0);
+        let aggregated = AggregatedCoverage::new();
+        assert_aggregated_counters_eq(&aggregated.functions, 0, 0);
     }
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_branch_count_shall_be_0() {
-        let aggregated = super::Aggregated::new();
-        assert_branches_aggregate_eq(&aggregated, 0, 0);
+        let aggregated = AggregatedCoverage::new();
+        assert_aggregated_counters_eq(&aggregated.branches, 0, 0);
     }
 
     #[test]
@@ -120,23 +122,23 @@ mod test {
         let other = AggregatedFixtures::get_file_aggregates_20_10();
         aggregated.add(&other);
 
-        assert_lines_aggregate_eq(&aggregated, 30, 15);
-        assert_functions_aggregate_eq(&aggregated, 9, 7);
-        assert_branches_aggregate_eq(&aggregated, 3, 2);
+        assert_aggregated_counters_eq(&aggregated.lines, 30, 15);
+        assert_aggregated_counters_eq(&aggregated.functions, 9, 7);
+        assert_aggregated_counters_eq(&aggregated.branches, 3, 2);
 
-        assert_lines_aggregate_eq(&other, 20, 10);
-        assert_functions_aggregate_eq(&other, 7, 6);
-        assert_branches_aggregate_eq(&other, 0, 0);
+        assert_aggregated_counters_eq(&other.lines, 20, 10);
+        assert_aggregated_counters_eq(&other.functions, 7, 6);
+        assert_aggregated_counters_eq(&other.branches, 0, 0);
     }
 
     #[test]
     fn when_creating_from_an_empty_section_line_counts_shall_be_0() {
         let section_value = SectionValue::default();
-        let aggregated = Aggregated::from_section(section_value);
+        let aggregated = AggregatedCoverage::from_section(section_value);
 
-        assert_lines_aggregate_eq(&aggregated, 0, 0);
-        assert_functions_aggregate_eq(&aggregated, 0, 0);
-        assert_branches_aggregate_eq(&aggregated, 0, 0);
+        assert_aggregated_counters_eq(&aggregated.lines, 0, 0);
+        assert_aggregated_counters_eq(&aggregated.functions, 0, 0);
+        assert_aggregated_counters_eq(&aggregated.branches, 0, 0);
     }
 
     #[test]
@@ -144,8 +146,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.lines.insert_line(1, 3);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_lines_aggregate_eq(&aggregated, 1, 1);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.lines, 1, 1);
     }
 
     #[test]
@@ -153,8 +155,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.functions.insert_function("f", 3);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_functions_aggregate_eq(&aggregated, 1, 1);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.functions, 1, 1);
     }
 
     #[test]
@@ -162,8 +164,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.branches.insert_branch(1, 3);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_branches_aggregate_eq(&aggregated, 1, 1);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.branches, 1, 1);
     }
 
     #[test]
@@ -171,8 +173,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.lines.insert_line(1, 0);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_lines_aggregate_eq(&aggregated, 1, 0);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.lines, 1, 0);
     }
 
     #[test]
@@ -180,8 +182,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.functions.insert_function("f", 0);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_functions_aggregate_eq(&aggregated, 1, 0);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.functions, 1, 0);
     }
 
     #[test]
@@ -189,8 +191,8 @@ mod test {
         let mut section_value = SectionValue::default();
         section_value.branches.insert_branch(1, 0);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_branches_aggregate_eq(&aggregated, 1, 0);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.branches, 1, 0);
     }
 
     #[test]
@@ -202,8 +204,8 @@ mod test {
             .insert_line(2, 3)
             .insert_line(3, 1);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_lines_aggregate_eq(&aggregated, 3, 2);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.lines, 3, 2);
     }
 
     #[test]
@@ -215,8 +217,8 @@ mod test {
             .insert_function("f2", 3)
             .insert_function("f3", 1);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_functions_aggregate_eq(&aggregated, 3, 2);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.functions, 3, 2);
     }
 
     #[test]
@@ -228,7 +230,7 @@ mod test {
             .insert_branch(2, 3)
             .insert_branch(3, 1);
 
-        let aggregated = Aggregated::from_section(section_value);
-        assert_branches_aggregate_eq(&aggregated, 3, 2);
+        let aggregated = AggregatedCoverage::from_section(section_value);
+        assert_aggregated_counters_eq(&aggregated.branches, 3, 2);
     }
 }

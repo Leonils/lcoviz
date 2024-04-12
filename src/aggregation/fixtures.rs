@@ -1,4 +1,6 @@
-use super::{aggregated::Aggregated, test_report::ReportTree, tested_file::TestedFile};
+use crate::core::{AggregatedCoverage, AggregatedCoverageCounters};
+
+use super::{test_report::ReportTree, tested_file::TestedFile};
 
 pub struct AggregatedFixtures {}
 impl AggregatedFixtures {
@@ -13,26 +15,46 @@ impl AggregatedFixtures {
     }
 
     /// Build an aggregate with 10 lines, 5 covered, 2 functions, 1 covered, 3 branches, 2 covered
-    pub fn get_file_aggregates_10_5() -> Aggregated {
-        Aggregated {
-            lines_count: 10,
-            covered_lines_count: 5,
-            functions_count: 2,
-            covered_functions_count: 1,
-            branches_count: 3,
-            covered_branches_count: 2,
+    pub fn get_file_aggregates_10_5() -> AggregatedCoverage {
+        AggregatedCoverage {
+            lines: AggregatedCoverageCounters {
+                count: 10,
+                covered_count: 5,
+            },
+            functions: AggregatedCoverageCounters {
+                count: 2,
+                covered_count: 1,
+            },
+            branches: AggregatedCoverageCounters {
+                count: 3,
+                covered_count: 2,
+            },
         }
     }
 
     /// Build an aggregate with 20 lines, 10 covered, 7 functions, 6 covered, 0 branches, 0 covered
-    pub fn get_file_aggregates_20_10() -> Aggregated {
-        Aggregated {
-            lines_count: 20,
-            covered_lines_count: 10,
-            functions_count: 7,
-            covered_functions_count: 6,
-            branches_count: 0,
-            covered_branches_count: 0,
+    pub fn get_file_aggregates_20_10() -> AggregatedCoverage {
+        AggregatedCoverage {
+            lines: AggregatedCoverageCounters {
+                count: 20,
+                covered_count: 10,
+            },
+            functions: AggregatedCoverageCounters {
+                count: 7,
+                covered_count: 6,
+            },
+            ..Default::default()
+        }
+    }
+
+    /// Build an aggregate with 3 lines, 1 covered
+    pub fn get_file_aggregates_3_1() -> AggregatedCoverage {
+        AggregatedCoverage {
+            lines: AggregatedCoverageCounters {
+                count: 3,
+                covered_count: 1,
+            },
+            ..Default::default()
         }
     }
 

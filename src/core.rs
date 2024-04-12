@@ -1,21 +1,23 @@
-pub trait AggregatedCoverageCounters {
-    fn get_count(&self) -> u32;
-    fn get_covered_count(&self) -> u32;
+#[derive(Default, Debug, PartialEq)]
+pub struct AggregatedCoverageCounters {
+    pub count: u32,
+    pub covered_count: u32,
 }
 
-pub trait AggregatedCoverage {
-    fn get_lines(&self) -> Option<impl AggregatedCoverageCounters>;
-    fn get_functions(&self) -> Option<impl AggregatedCoverageCounters>;
-    fn get_branches(&self) -> Option<impl AggregatedCoverageCounters>;
+#[derive(Default, Debug, PartialEq)]
+pub struct AggregatedCoverage {
+    pub lines: AggregatedCoverageCounters,
+    pub functions: AggregatedCoverageCounters,
+    pub branches: AggregatedCoverageCounters,
 }
 
 pub trait TestedFile {
     fn get_file_path(&self) -> String;
-    fn get_aggregated_coverage(&self) -> impl AggregatedCoverage;
+    fn get_aggregated_coverage(&self) -> AggregatedCoverage;
 }
 
 pub trait TestedContainer {
-    fn get_aggregated_coverage(&self) -> impl AggregatedCoverage;
+    fn get_aggregated_coverage(&self) -> AggregatedCoverage;
     fn get_container_children(&self) -> Vec<impl TestedContainer>;
     fn get_code_file_children(&self) -> Vec<impl TestedFile>;
 }

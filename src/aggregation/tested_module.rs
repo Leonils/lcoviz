@@ -1,4 +1,6 @@
-use super::{aggregated::Aggregated, tested_file::TestedFile, with_path::WithPath};
+use crate::core::AggregatedCoverage;
+
+use super::{tested_file::TestedFile, with_path::WithPath};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedModule {
@@ -6,7 +8,7 @@ pub struct TestedModule {
     path: String,
     source_files: Vec<TestedFile>,
     modules: Vec<TestedModule>,
-    pub aggregated: Aggregated,
+    pub aggregated: AggregatedCoverage,
 }
 
 impl TestedModule {
@@ -14,6 +16,7 @@ impl TestedModule {
         TestedModule {
             name,
             path,
+            aggregated: AggregatedCoverage::new(),
             ..Default::default()
         }
     }
@@ -54,21 +57,19 @@ impl WithPath for TestedModule {
 #[cfg(test)]
 impl TestedModule {
     pub fn from_source_files(path: &str, name: &str, source_files: Vec<TestedFile>) -> Self {
-        TestedModule {
-            name: String::from(name),
-            path: String::from(path),
-            source_files,
-            ..Default::default()
+        let mut module = TestedModule::new(String::from(path), String::from(name));
+        for source_file in source_files {
+            module.add_file(vec![], source_file);
         }
+        module
     }
 
     pub fn from_modules(path: &str, name: &str, modules: Vec<TestedModule>) -> Self {
-        TestedModule {
-            name: String::from(name),
-            path: String::from(path),
-            modules,
-            ..Default::default()
+        let mut module = TestedModule::new(String::from(path), String::from(name));
+        for submodule in modules {
+            module.modules.push(submodule);
         }
+        module
     }
 
     pub fn get_module_at(&self, i: usize) -> &TestedModule {
@@ -82,7 +83,10 @@ impl TestedModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::aggregation::aggregated::{assert_lines_aggregate_eq, Aggregated};
+
+    use crate::aggregation::{
+        aggregated::assert_aggregated_counters_eq, fixtures::AggregatedFixtures,
+    };
 
     use super::*;
 
@@ -149,28 +153,30 @@ mod tests {
     #[test]
     fn when_creating_empty_module_it_should_have_aggregate_0() {
         let tested_module = TestedModule::new("section".to_string(), "name".to_string());
-        assert_eq!(tested_module.aggregated, Aggregated::default());
+
+        assert_aggregated_counters_eq(&tested_module.aggregated.lines, 0, 0);
+        assert_aggregated_counters_eq(&tested_module.aggregated.functions, 0, 0);
+        assert_aggregated_counters_eq(&tested_module.aggregated.branches, 0, 0);
     }
 
     #[test]
     fn when_creating_a_tested_module_with_empty_file_it_should_have_aggregate_0() {
         let tested_file = TestedFile::new("section/file.cpp", "file.cpp");
         let tested_module = TestedModule::from_source_files("section", "name", vec![tested_file]);
-        assert_eq!(tested_module.aggregated, Aggregated::default());
+
+        assert_aggregated_counters_eq(&tested_module.aggregated.lines, 0, 0);
+        assert_aggregated_counters_eq(&tested_module.aggregated.functions, 0, 0);
+        assert_aggregated_counters_eq(&tested_module.aggregated.branches, 0, 0);
     }
 
     #[test]
     fn when_creating_a_tested_module_with_one_file_it_should_get_same_aggregate() {
-        let aggregated = Aggregated {
-            lines_count: 10,
-            covered_lines_count: 5,
-            ..Default::default()
-        };
+        let aggregated = AggregatedFixtures::get_file_aggregates_10_5();
         let tested_file = TestedFile::with_aggregated("section/file.cpp", "file.cpp", aggregated);
         let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
         tested_module.add_file(vec![], tested_file);
 
-        assert_lines_aggregate_eq(&tested_module.aggregated, 10, 5);
+        assert_aggregated_counters_eq(&tested_module.aggregated.lines, 10, 5);
     }
 
     #[test]
@@ -179,20 +185,12 @@ mod tests {
         let tested_file1 = TestedFile::with_aggregated(
             "section/file.cpp",
             "file.cpp",
-            Aggregated {
-                lines_count: 10,
-                covered_lines_count: 5,
-                ..Default::default()
-            },
+            AggregatedFixtures::get_file_aggregates_10_5(),
         );
         let tested_file2 = TestedFile::with_aggregated(
             "section/module/file2.cpp",
             "file2.cpp",
-            Aggregated {
-                lines_count: 3,
-                covered_lines_count: 1,
-                ..Default::default()
-            },
+            AggregatedFixtures::get_file_aggregates_3_1(),
         );
         let mut tested_module = TestedModule::new("section".to_string(), "name".to_string());
         tested_module.add_file(vec![], tested_file1);
@@ -200,7 +198,7 @@ mod tests {
 
         // Check the aggregated values of the top module
         let module = tested_module.get_module_at(0);
-        assert_lines_aggregate_eq(&tested_module.aggregated, 13, 6);
-        assert_lines_aggregate_eq(&module.aggregated, 3, 1);
+        assert_aggregated_counters_eq(&tested_module.aggregated.lines, 13, 6);
+        assert_aggregated_counters_eq(&module.aggregated.lines, 3, 1);
     }
 }
