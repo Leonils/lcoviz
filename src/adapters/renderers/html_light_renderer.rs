@@ -23,6 +23,38 @@ impl HtmlLightRenderer {
             .unwrap_or(String::from("no-coverage"))
     }
 
+    fn render_aggregated_counter_chip(
+        &self,
+        name: &str,
+        counter: &crate::core::AggregatedCoverageCounters,
+    ) -> String {
+        let percentage = counter.percentage();
+        let percentage_class = self.get_percentage_class(&percentage);
+        format!(
+            "<div class=\"coverage-stats-chip\">
+                <div class=\"coverage-stats-chip-left\">{} {}/{}</div>
+                <div class=\"coverage-stats-chip-right {}\">{}</div>
+            </div>",
+            name,
+            counter.covered_count,
+            counter.count,
+            percentage_class,
+            &self.render_optional_percentage(percentage)
+        )
+    }
+
+    fn render_aggregated_coverage_chips(
+        &self,
+        coverage: &crate::core::AggregatedCoverage,
+    ) -> String {
+        format!(
+            "{}{}{}",
+            self.render_aggregated_counter_chip("lines", &coverage.lines),
+            self.render_aggregated_counter_chip("functions", &coverage.functions),
+            self.render_aggregated_counter_chip("branches", &coverage.branches)
+        )
+    }
+
     fn render_aggregated_counters(
         &self,
         counters: &crate::core::AggregatedCoverageCounters,
@@ -87,6 +119,30 @@ impl HtmlLightRenderer {
                 .join("\n")
         )
     }
+
+    fn render_top_module_row(&self, module: &impl TestedContainer) -> String {
+        format!(
+            "<div class=\"top-module\"><h2>{}</h2>{}</div>
+<div class=\"module-children\">
+    {}
+    {}
+</div>",
+            module.get_name(),
+            self.render_aggregated_coverage_chips(module.get_aggregated_coverage()),
+            module
+                .get_container_children()
+                .iter()
+                .map(|module| self.render_module_row(module))
+                .collect::<Vec<String>>()
+                .join("\n"),
+            module
+                .get_code_file_children()
+                .iter()
+                .map(|file| self.render_file_row(file))
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
 }
 
 impl Renderer for HtmlLightRenderer {
@@ -103,6 +159,13 @@ impl Renderer for HtmlLightRenderer {
             h1 {{
                 font-weight: 400;
                 font-size: xxx-large;
+            }}
+            h2 {{
+                font-weight: 400;
+                font-size: xx-large;
+                margin-right: 40px;
+                margin-bottom: 10px;
+                margin-top: 10px;
             }}
             .responsive-container {{
                 max-width: 1200px;
@@ -143,6 +206,28 @@ impl Renderer for HtmlLightRenderer {
                 border-radius: 4px;
                 padding: 2px;
             }}
+            .top-module {{
+                display: flex;
+                border-bottom: solid 1px #555;
+                margin-bottom: 30px;
+            }}
+            .coverage-stats-chip {{
+                border: solid 1px #555;
+                margin: auto 0 auto 10px;
+                border-radius: 10px;
+                display: flex;
+                position: relative;
+            }}
+            .coverage-stats-chip-left {{
+                padding: 4px 10px;
+                border-radius: 10px 0 0 10px;
+                text-align: right;
+                background-color: #fff;
+            }}
+            .coverage-stats-chip-right {{
+                padding: 4px 10px;
+                border-radius: 0 10px 10px 0;
+            }}
             .percentage-0 {{ background-color: #c10000aa; color: #fff; }}
             .percentage-1 {{ background-color: #c12e00aa; color: #fff; }}
             .percentage-2 {{ background-color: #cf461baa; color: #fff; }}
@@ -166,7 +251,7 @@ impl Renderer for HtmlLightRenderer {
 </html>",
             root.get_container_children()
                 .iter()
-                .map(|module| self.render_module_row(module))
+                .map(|module| self.render_top_module_row(module))
                 .collect::<Vec<String>>()
                 .join("\n")
         );
