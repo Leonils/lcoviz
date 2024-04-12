@@ -10,6 +10,13 @@ impl AggregatedCoverageCounters {
             covered_count,
         }
     }
+
+    pub fn percentage(&self) -> Option<f32> {
+        if self.count == 0 {
+            return None;
+        }
+        Some((self.covered_count as f32 / self.count as f32) * 100.0)
+    }
 }
 
 #[derive(Default, Debug, PartialEq)]
