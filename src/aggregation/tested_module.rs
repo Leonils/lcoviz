@@ -8,7 +8,7 @@ pub struct TestedModule {
     path: String,
     source_files: Vec<TestedCodeFile>,
     modules: Vec<TestedModule>,
-    pub aggregated: AggregatedCoverage,
+    aggregated: AggregatedCoverage,
 }
 
 impl TestedModule {
@@ -26,7 +26,7 @@ impl TestedModule {
     }
 
     pub fn add_file(&mut self, path: Vec<String>, file: TestedCodeFile) {
-        self.aggregated.add(&file.aggregated);
+        self.aggregated.add(&file.get_aggregated_coverage());
 
         if path.is_empty() {
             self.source_files.push(file);

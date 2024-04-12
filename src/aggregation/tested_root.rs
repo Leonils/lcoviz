@@ -46,7 +46,7 @@ impl TestedRoot {
             return;
         }
 
-        self.aggregated.add(&file.aggregated);
+        self.aggregated.add(&file.get_aggregated_coverage());
         if section_path.len() == 1 {
             self.source_files.push(file);
             return;
@@ -101,6 +101,7 @@ impl TestedRoot {
 mod test {
     use crate::{
         aggregation::{aggregated::assert_aggregated_counters_eq, with_path::WithPath},
+        core::{TestedContainer, TestedFile},
         test_utils::builders::{
             generate_2_lines_1_covered_section, generate_3_lines_2_covered_section, InsertSection,
         },
@@ -260,7 +261,7 @@ mod test {
         let report_tree = TestedRoot::from_original_report(original_report);
         let tested_file = report_tree.source_files.get(0).unwrap();
 
-        assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
+        assert_aggregated_counters_eq(&tested_file.get_aggregated_coverage().lines, 3, 2);
         assert_aggregated_counters_eq(&report_tree.aggregated.lines, 3, 2);
     }
 
@@ -281,10 +282,24 @@ mod test {
         let module2 = report_tree.modules.get(1).unwrap();
 
         assert_aggregated_counters_eq(&report_tree.aggregated.lines, 5, 3);
-        assert_aggregated_counters_eq(&module1.aggregated.lines, 3, 2);
-        assert_aggregated_counters_eq(&sub_module1.aggregated.lines, 3, 2);
-        assert_aggregated_counters_eq(&sub_module1.get_source_file_at(0).aggregated.lines, 3, 2);
-        assert_aggregated_counters_eq(&module2.aggregated.lines, 2, 1);
-        assert_aggregated_counters_eq(&module2.get_source_file_at(0).aggregated.lines, 2, 1);
+        assert_aggregated_counters_eq(&module1.get_aggregated_coverage().lines, 3, 2);
+        assert_aggregated_counters_eq(&sub_module1.get_aggregated_coverage().lines, 3, 2);
+        assert_aggregated_counters_eq(
+            &sub_module1
+                .get_source_file_at(0)
+                .get_aggregated_coverage()
+                .lines,
+            3,
+            2,
+        );
+        assert_aggregated_counters_eq(&module2.get_aggregated_coverage().lines, 2, 1);
+        assert_aggregated_counters_eq(
+            &module2
+                .get_source_file_at(0)
+                .get_aggregated_coverage()
+                .lines,
+            2,
+            1,
+        );
     }
 }

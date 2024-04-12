@@ -7,7 +7,7 @@ use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 pub struct TestedCodeFile {
     file_name: String,
     path: String,
-    pub aggregated: AggregatedCoverage,
+    aggregated: AggregatedCoverage,
 }
 
 impl TestedCodeFile {
