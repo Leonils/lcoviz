@@ -137,10 +137,23 @@ mod test {
     fn when_building_tree_with_a_report_with_one_file_nested_it_should_get_a_report_with_module_node(
     ) {
         let original_report = LcovReport::new().insert_empty_section("package/main.cpp");
-
         let report_tree = TestedRoot::from_original_report(original_report);
 
         let tested_file = TestedCodeFile::new("package/main.cpp", "main.cpp");
+        let tested_module =
+            TestedModule::from_source_files("package", "package", vec![tested_file]);
+        let expected_tree = TestedRoot::from_modules(vec![tested_module]);
+
+        assert_eq!(expected_tree, report_tree);
+    }
+
+    #[test]
+    fn when_building_tree_with_a_report_with_path_starting_with_slash_should_start_with_first_module(
+    ) {
+        let original_report = LcovReport::new().insert_empty_section("/package/main.cpp");
+        let report_tree = TestedRoot::from_original_report(original_report);
+
+        let tested_file = TestedCodeFile::new("/package/main.cpp", "main.cpp");
         let tested_module =
             TestedModule::from_source_files("package", "package", vec![tested_file]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module]);
