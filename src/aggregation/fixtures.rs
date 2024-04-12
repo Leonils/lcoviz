@@ -1,16 +1,16 @@
 use crate::core::{AggregatedCoverage, AggregatedCoverageCounters};
 
-use super::{test_report::ReportTree, tested_file::TestedFile};
+use super::{tested_file::TestedCodeFile, tested_root::TestedRoot};
 
 pub struct AggregatedFixtures {}
 impl AggregatedFixtures {
-    pub fn get_empty_report() -> ReportTree {
-        ReportTree::default()
+    pub fn get_empty_report() -> TestedRoot {
+        TestedRoot::default()
     }
 
-    pub fn get_top_level_file_report_no_line() -> ReportTree {
-        let main_cpp = TestedFile::new("main.cpp", "main.cpp");
-        let report = ReportTree::from_source_files(vec![main_cpp]);
+    pub fn get_top_level_file_report_no_line() -> TestedRoot {
+        let main_cpp = TestedCodeFile::new("main.cpp", "main.cpp");
+        let report = TestedRoot::from_source_files(vec![main_cpp]);
         report
     }
 
@@ -40,10 +40,13 @@ impl AggregatedFixtures {
         }
     }
 
-    pub fn get_top_level_file_report_with_aggregated() -> ReportTree {
-        let main_cpp =
-            TestedFile::with_aggregated("main.cpp", "main.cpp", Self::get_file_aggregates_10_5());
-        let report = ReportTree::from_source_files(vec![main_cpp]);
+    pub fn get_top_level_file_report_with_aggregated() -> TestedRoot {
+        let main_cpp = TestedCodeFile::with_aggregated(
+            "main.cpp",
+            "main.cpp",
+            Self::get_file_aggregates_10_5(),
+        );
+        let report = TestedRoot::from_source_files(vec![main_cpp]);
         report
     }
 }

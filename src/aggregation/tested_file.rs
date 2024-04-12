@@ -1,18 +1,18 @@
-use crate::core::AggregatedCoverage;
+use crate::core::{AggregatedCoverage, TestedFile};
 
 use super::with_path::WithPath;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 #[derive(Debug, PartialEq, Default)]
-pub struct TestedFile {
+pub struct TestedCodeFile {
     file_name: String,
     path: String,
     pub aggregated: AggregatedCoverage,
 }
 
-impl TestedFile {
+impl TestedCodeFile {
     pub fn new(path: &str, file_name: &str) -> Self {
-        TestedFile {
+        TestedCodeFile {
             file_name: String::from(file_name),
             path: String::from(path),
             aggregated: AggregatedCoverage::default(),
@@ -24,7 +24,7 @@ impl TestedFile {
         let file_name = path.split('/').last().unwrap().to_string();
         let aggregated = AggregatedCoverage::from_section(value);
 
-        TestedFile {
+        TestedCodeFile {
             file_name,
             path,
             aggregated,
@@ -32,18 +32,28 @@ impl TestedFile {
     }
 }
 
-impl WithPath for TestedFile {
+impl TestedFile for TestedCodeFile {
+    fn get_file_path(&self) -> &str {
+        &self.file_name
+    }
+
+    fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
+        &self.aggregated
+    }
+}
+
+impl WithPath for TestedCodeFile {
     fn get_path_string(&self) -> String {
         self.path.clone()
     }
 }
 
 #[cfg(test)]
-impl TestedFile {
+impl TestedCodeFile {
     pub fn with_aggregated(path: &str, file_name: &str, aggregated: AggregatedCoverage) -> Self {
-        TestedFile {
+        TestedCodeFile {
             aggregated,
-            ..TestedFile::new(path, file_name)
+            ..TestedCodeFile::new(path, file_name)
         }
     }
 }
@@ -59,13 +69,13 @@ mod test {
 
     #[test]
     fn when_creating_a_tested_file_the_aggregated_count_should_be_0() {
-        let tested_file = TestedFile::new("path", "file");
+        let tested_file = TestedCodeFile::new("path", "file");
         assert_eq!(tested_file.aggregated, AggregatedCoverage::default());
     }
 
     #[test]
     fn when_getting_the_path_string_it_should_return_the_path() {
-        let tested_file = TestedFile::new("path", "file");
+        let tested_file = TestedCodeFile::new("path", "file");
         assert_eq!(tested_file.get_path_string(), "path");
     }
 
@@ -77,7 +87,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedFile::from_section(key, value);
+        let tested_file = TestedCodeFile::from_section(key, value);
         assert_eq!(tested_file.file_name, "file.cpp");
     }
 
@@ -89,7 +99,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedFile::from_section(key, value);
+        let tested_file = TestedCodeFile::from_section(key, value);
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 0, 0);
     }
 
@@ -102,7 +112,7 @@ mod test {
 
         let section_value = generate_3_lines_2_covered_section();
 
-        let tested_file = TestedFile::from_section(key, section_value);
+        let tested_file = TestedCodeFile::from_section(key, section_value);
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
     }
 }

@@ -1,19 +1,19 @@
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
-use crate::core::AggregatedCoverage;
+use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 
-use super::{tested_file::TestedFile, tested_module::TestedModule, with_path::WithPath};
+use super::{tested_file::TestedCodeFile, tested_module::TestedModule, with_path::WithPath};
 
 #[derive(Debug, PartialEq, Default)]
-pub struct ReportTree {
+pub struct TestedRoot {
     modules: Vec<TestedModule>,
-    source_files: Vec<TestedFile>,
+    source_files: Vec<TestedCodeFile>,
     aggregated: AggregatedCoverage,
 }
 
-impl ReportTree {
+impl TestedRoot {
     pub fn from_original_report(report: lcov::report::Report) -> Self {
-        let mut tree = ReportTree {
+        let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
             ..Default::default()
         };
@@ -38,7 +38,7 @@ impl ReportTree {
     }
 
     fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue) {
-        let file = TestedFile::from_section(section_key, section_value);
+        let file = TestedCodeFile::from_section(section_key, section_value);
         let section_path = file.get_path();
 
         if section_path.is_empty() {
@@ -64,10 +64,24 @@ impl ReportTree {
     }
 }
 
+impl TestedContainer for TestedRoot {
+    fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
+        &self.aggregated
+    }
+
+    fn get_container_children(&self) -> &Vec<impl TestedContainer> {
+        &self.modules
+    }
+
+    fn get_code_file_children(&self) -> &Vec<impl TestedFile> {
+        &self.source_files
+    }
+}
+
 #[cfg(test)]
-impl ReportTree {
-    pub fn from_source_files(source_files: Vec<TestedFile>) -> Self {
-        ReportTree {
+impl TestedRoot {
+    pub fn from_source_files(source_files: Vec<TestedCodeFile>) -> Self {
+        TestedRoot {
             aggregated: AggregatedCoverage::default(),
             modules: vec![],
             source_files,
@@ -75,7 +89,7 @@ impl ReportTree {
     }
 
     pub fn from_modules(modules: Vec<TestedModule>) -> Self {
-        ReportTree {
+        TestedRoot {
             aggregated: AggregatedCoverage::default(),
             modules,
             source_files: vec![],
@@ -93,16 +107,16 @@ mod test {
     };
 
     use super::{
-        super::{tested_file::TestedFile, tested_module::TestedModule},
-        ReportTree,
+        super::{tested_file::TestedCodeFile, tested_module::TestedModule},
+        TestedRoot,
     };
     use lcov::report::Report as LcovReport;
 
     #[test]
     fn when_building_tree_with_an_empty_report_it_should_get_an_empty_report() {
         let original_report = LcovReport::new();
-        let report_tree = ReportTree::from_original_report(original_report);
-        assert_eq!(ReportTree::default(), report_tree);
+        let report_tree = TestedRoot::from_original_report(original_report);
+        assert_eq!(TestedRoot::default(), report_tree);
     }
 
     #[test]
@@ -110,10 +124,10 @@ mod test {
     ) {
         let original_report = LcovReport::new().insert_empty_section("main.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("main.cpp", "main.cpp");
-        let expected_tree = ReportTree::from_source_files(vec![tested_file]);
+        let tested_file = TestedCodeFile::new("main.cpp", "main.cpp");
+        let expected_tree = TestedRoot::from_source_files(vec![tested_file]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -123,12 +137,12 @@ mod test {
     ) {
         let original_report = LcovReport::new().insert_empty_section("package/main.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("package/main.cpp", "main.cpp");
+        let tested_file = TestedCodeFile::new("package/main.cpp", "main.cpp");
         let tested_module =
             TestedModule::from_source_files("package", "package", vec![tested_file]);
-        let expected_tree = ReportTree::from_modules(vec![tested_module]);
+        let expected_tree = TestedRoot::from_modules(vec![tested_module]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -139,9 +153,9 @@ mod test {
         let original_report =
             LcovReport::new().insert_empty_section("package/sub-package/main.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file = TestedFile::new("package/sub-package/main.cpp", "main.cpp");
+        let tested_file = TestedCodeFile::new("package/sub-package/main.cpp", "main.cpp");
         let tested_module_2 = TestedModule::from_source_files(
             "package/sub-package",
             "sub-package",
@@ -149,7 +163,7 @@ mod test {
         );
         let tested_module_1 =
             TestedModule::from_modules("package", "package", vec![tested_module_2]);
-        let expected_tree = ReportTree::from_modules(vec![tested_module_1]);
+        let expected_tree = TestedRoot::from_modules(vec![tested_module_1]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -160,12 +174,12 @@ mod test {
             .insert_empty_section("main.cpp")
             .insert_empty_section("module.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("main.cpp", "main.cpp");
-        let tested_file_module = TestedFile::new("module.cpp", "module.cpp");
+        let tested_file_main = TestedCodeFile::new("main.cpp", "main.cpp");
+        let tested_file_module = TestedCodeFile::new("module.cpp", "module.cpp");
         let expected_tree =
-            ReportTree::from_source_files(vec![tested_file_main, tested_file_module]);
+            TestedRoot::from_source_files(vec![tested_file_main, tested_file_module]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -176,17 +190,17 @@ mod test {
             .insert_empty_section("my/package/main.cpp")
             .insert_empty_section("my/package/module.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("my/package/main.cpp", "main.cpp");
-        let tested_file_module = TestedFile::new("my/package/module.cpp", "module.cpp");
+        let tested_file_main = TestedCodeFile::new("my/package/main.cpp", "main.cpp");
+        let tested_file_module = TestedCodeFile::new("my/package/module.cpp", "module.cpp");
         let tested_module_package = TestedModule::from_source_files(
             "my/package",
             "package",
             vec![tested_file_main, tested_file_module],
         );
         let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
-        let expected_tree = ReportTree::from_modules(vec![tested_module_my]);
+        let expected_tree = TestedRoot::from_modules(vec![tested_module_my]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -197,16 +211,16 @@ mod test {
             .insert_empty_section("my/package/main.cpp")
             .insert_empty_section("yours/module.cpp");
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
-        let tested_file_main = TestedFile::new("my/package/main.cpp", "main.cpp");
-        let tested_file_module = TestedFile::new("yours/module.cpp", "module.cpp");
+        let tested_file_main = TestedCodeFile::new("my/package/main.cpp", "main.cpp");
+        let tested_file_module = TestedCodeFile::new("yours/module.cpp", "module.cpp");
         let tested_module_package =
             TestedModule::from_source_files("my/package", "package", vec![tested_file_main]);
         let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
         let tested_module_yours =
             TestedModule::from_source_files("yours", "yours", vec![tested_file_module]);
-        let expected_tree = ReportTree::from_modules(vec![tested_module_my, tested_module_yours]);
+        let expected_tree = TestedRoot::from_modules(vec![tested_module_my, tested_module_yours]);
 
         assert_eq!(expected_tree, report_tree);
     }
@@ -216,7 +230,7 @@ mod test {
     ) {
         let original_report =
             LcovReport::new().insert_empty_section("package/sub-package/main.cpp");
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
         let package = report_tree.modules.get(0).unwrap();
         let sub_package = package.get_module_at(0);
@@ -230,7 +244,7 @@ mod test {
     #[test]
     fn when_building_tree_with_an_empty_report_it_should_get_0_aggregates() {
         let original_report = LcovReport::new();
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
 
         assert_aggregated_counters_eq(&report_tree.aggregated.lines, 0, 0);
         assert_aggregated_counters_eq(&report_tree.aggregated.functions, 0, 0);
@@ -243,7 +257,7 @@ mod test {
         let original_report =
             LcovReport::new().insert_section("main.cpp", generate_3_lines_2_covered_section());
 
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
         let tested_file = report_tree.source_files.get(0).unwrap();
 
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
@@ -261,7 +275,7 @@ mod test {
             .insert_section("module2/main.cpp", generate_2_lines_1_covered_section());
 
         // Aggregate
-        let report_tree = ReportTree::from_original_report(original_report);
+        let report_tree = TestedRoot::from_original_report(original_report);
         let module1 = report_tree.modules.get(0).unwrap();
         let sub_module1 = module1.get_module_at(0);
         let module2 = report_tree.modules.get(1).unwrap();

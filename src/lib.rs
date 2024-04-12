@@ -17,9 +17,9 @@ pub mod styles {
 
 pub mod aggregation {
     mod aggregated;
-    pub mod test_report;
     mod tested_file;
     mod tested_module;
+    pub mod tested_root;
     mod with_path;
 
     #[cfg(test)]
