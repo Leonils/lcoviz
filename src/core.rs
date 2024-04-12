@@ -3,6 +3,14 @@ pub struct AggregatedCoverageCounters {
     pub count: u32,
     pub covered_count: u32,
 }
+impl AggregatedCoverageCounters {
+    pub fn new(count: u32, covered_count: u32) -> Self {
+        AggregatedCoverageCounters {
+            count,
+            covered_count,
+        }
+    }
+}
 
 #[derive(Default, Debug, PartialEq)]
 pub struct AggregatedCoverage {

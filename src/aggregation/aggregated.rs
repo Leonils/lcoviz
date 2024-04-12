@@ -37,18 +37,9 @@ impl AggregatedCoverage {
             .count() as u32;
 
         Self {
-            lines: AggregatedCoverageCounters {
-                count: lines_count,
-                covered_count: covered_lines_count,
-            },
-            functions: AggregatedCoverageCounters {
-                count: functions_count,
-                covered_count: covered_functions_count,
-            },
-            branches: AggregatedCoverageCounters {
-                count: branches_count,
-                covered_count: covered_branches_count,
-            },
+            lines: AggregatedCoverageCounters::new(lines_count, covered_lines_count),
+            functions: AggregatedCoverageCounters::new(functions_count, covered_functions_count),
+            branches: AggregatedCoverageCounters::new(branches_count, covered_branches_count),
         }
     }
 }

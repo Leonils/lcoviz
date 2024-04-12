@@ -17,32 +17,17 @@ impl AggregatedFixtures {
     /// Build an aggregate with 10 lines, 5 covered, 2 functions, 1 covered, 3 branches, 2 covered
     pub fn get_file_aggregates_10_5() -> AggregatedCoverage {
         AggregatedCoverage {
-            lines: AggregatedCoverageCounters {
-                count: 10,
-                covered_count: 5,
-            },
-            functions: AggregatedCoverageCounters {
-                count: 2,
-                covered_count: 1,
-            },
-            branches: AggregatedCoverageCounters {
-                count: 3,
-                covered_count: 2,
-            },
+            lines: AggregatedCoverageCounters::new(10, 5),
+            functions: AggregatedCoverageCounters::new(2, 1),
+            branches: AggregatedCoverageCounters::new(3, 2),
         }
     }
 
     /// Build an aggregate with 20 lines, 10 covered, 7 functions, 6 covered, 0 branches, 0 covered
     pub fn get_file_aggregates_20_10() -> AggregatedCoverage {
         AggregatedCoverage {
-            lines: AggregatedCoverageCounters {
-                count: 20,
-                covered_count: 10,
-            },
-            functions: AggregatedCoverageCounters {
-                count: 7,
-                covered_count: 6,
-            },
+            lines: AggregatedCoverageCounters::new(20, 10),
+            functions: AggregatedCoverageCounters::new(7, 6),
             ..Default::default()
         }
     }
@@ -50,10 +35,7 @@ impl AggregatedFixtures {
     /// Build an aggregate with 3 lines, 1 covered
     pub fn get_file_aggregates_3_1() -> AggregatedCoverage {
         AggregatedCoverage {
-            lines: AggregatedCoverageCounters {
-                count: 3,
-                covered_count: 1,
-            },
+            lines: AggregatedCoverageCounters::new(3, 1),
             ..Default::default()
         }
     }
