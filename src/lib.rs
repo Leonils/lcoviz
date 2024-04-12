@@ -30,6 +30,8 @@ mod views {
     mod index;
 }
 
+mod core;
+
 #[cfg(test)]
 pub mod test_utils {
     pub mod builders;
