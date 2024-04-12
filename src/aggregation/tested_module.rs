@@ -49,6 +49,10 @@ impl TestedModule {
 }
 
 impl TestedContainer for TestedModule {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }

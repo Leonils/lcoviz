@@ -65,6 +65,10 @@ impl TestedRoot {
 }
 
 impl TestedContainer for TestedRoot {
+    fn get_name(&self) -> &str {
+        "Test report"
+    }
+
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }

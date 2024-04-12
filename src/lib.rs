@@ -30,7 +30,13 @@ mod views {
     mod index;
 }
 
-mod core;
+pub mod core;
+
+pub mod adapters {
+    pub mod renderers {
+        pub mod html_light_renderer;
+    }
+}
 
 #[cfg(test)]
 pub mod test_utils {

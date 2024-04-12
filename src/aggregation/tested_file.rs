@@ -33,6 +33,10 @@ impl TestedCodeFile {
 }
 
 impl TestedFile for TestedCodeFile {
+    fn get_name(&self) -> &str {
+        &self.file_name
+    }
+
     fn get_file_path(&self) -> &str {
         &self.file_name
     }

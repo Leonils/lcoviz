@@ -20,17 +20,19 @@ pub struct AggregatedCoverage {
 }
 
 pub trait TestedFile {
+    fn get_name(&self) -> &str;
     fn get_file_path(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
 }
 
 pub trait TestedContainer {
+    fn get_name(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_container_children(&self) -> &Vec<impl TestedContainer>;
     fn get_code_file_children(&self) -> &Vec<impl TestedFile>;
 }
 
 pub trait Renderer {
-    fn render_coverage_summary(&self, root: impl TestedContainer) -> &str;
-    fn render_file_coverage_details(&self, file: impl TestedFile) -> &str;
+    fn render_coverage_summary(&self, root: impl TestedContainer) -> String;
+    fn render_file_coverage_details(&self, file: impl TestedFile) -> String;
 }
