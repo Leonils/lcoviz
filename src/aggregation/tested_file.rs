@@ -50,7 +50,7 @@ impl TestedFile {
 #[cfg(test)]
 mod test {
     use crate::{
-        aggregation::aggregated::Aggregated,
+        aggregation::aggregated::{assert_lines_aggregate_eq, Aggregated},
         test_utils::builders::generate_3_lines_2_covered_section,
     };
 
@@ -89,8 +89,7 @@ mod test {
         let value = SectionValue::default();
 
         let tested_file = TestedFile::from_section(key, value);
-        assert_eq!(tested_file.aggregated.lines_count, 0);
-        assert_eq!(tested_file.aggregated.covered_lines_count, 0);
+        assert_lines_aggregate_eq(&tested_file.aggregated, 0, 0);
     }
 
     #[test]
@@ -103,7 +102,6 @@ mod test {
         let section_value = generate_3_lines_2_covered_section();
 
         let tested_file = TestedFile::from_section(key, section_value);
-        assert_eq!(tested_file.aggregated.lines_count, 3);
-        assert_eq!(tested_file.aggregated.covered_lines_count, 2);
+        assert_lines_aggregate_eq(&tested_file.aggregated, 3, 2);
     }
 }
