@@ -14,7 +14,7 @@ pub struct ReportTree {
 impl ReportTree {
     pub fn from_original_report(report: lcov::report::Report) -> Self {
         let mut tree = ReportTree {
-            aggregated: AggregatedCoverage::new(),
+            aggregated: AggregatedCoverage::default(),
             ..Default::default()
         };
 
@@ -68,7 +68,7 @@ impl ReportTree {
 impl ReportTree {
     pub fn from_source_files(source_files: Vec<TestedFile>) -> Self {
         ReportTree {
-            aggregated: AggregatedCoverage::new(),
+            aggregated: AggregatedCoverage::default(),
             modules: vec![],
             source_files,
         }
@@ -76,7 +76,7 @@ impl ReportTree {
 
     pub fn from_modules(modules: Vec<TestedModule>) -> Self {
         ReportTree {
-            aggregated: AggregatedCoverage::new(),
+            aggregated: AggregatedCoverage::default(),
             modules,
             source_files: vec![],
         }

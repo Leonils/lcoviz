@@ -1,36 +1,13 @@
-// struct AggregatedCoverageCounters {
-//     count: u32,
-//     covered_count: u32,
-// }
-
-// #[derive(Debug, PartialEq, Default)]
-// pub struct Aggregated {
-//     pub lines_count: u32,
-//     pub covered_lines_count: u32,
-//     pub functions_count: u32,
-//     pub covered_functions_count: u32,
-//     pub branches_count: u32,
-//     pub covered_branches_count: u32,
-// }
-
 use crate::core::{AggregatedCoverage, AggregatedCoverageCounters};
 
 impl AggregatedCoverageCounters {
-    pub fn add(&mut self, other: &Self) {
+    fn add(&mut self, other: &Self) {
         self.count += other.count;
         self.covered_count += other.covered_count;
     }
 }
 
 impl AggregatedCoverage {
-    pub fn new() -> Self {
-        Self {
-            lines: AggregatedCoverageCounters::default(),
-            functions: AggregatedCoverageCounters::default(),
-            branches: AggregatedCoverageCounters::default(),
-        }
-    }
-
     pub fn add(&mut self, other: &Self) {
         self.lines.add(&other.lines);
         self.functions.add(&other.functions);
@@ -100,19 +77,19 @@ mod test {
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_line_count_shall_be_0() {
-        let aggregated = AggregatedCoverage::new();
+        let aggregated = AggregatedCoverage::default();
         assert_aggregated_counters_eq(&aggregated.lines, 0, 0);
     }
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_function_count_shall_be_0() {
-        let aggregated = AggregatedCoverage::new();
+        let aggregated = AggregatedCoverage::default();
         assert_aggregated_counters_eq(&aggregated.functions, 0, 0);
     }
 
     #[test]
     fn when_creating_an_aggregate_from_scratch_branch_count_shall_be_0() {
-        let aggregated = AggregatedCoverage::new();
+        let aggregated = AggregatedCoverage::default();
         assert_aggregated_counters_eq(&aggregated.branches, 0, 0);
     }
 

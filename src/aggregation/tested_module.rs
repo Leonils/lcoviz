@@ -16,7 +16,7 @@ impl TestedModule {
         TestedModule {
             name,
             path,
-            aggregated: AggregatedCoverage::new(),
+            aggregated: AggregatedCoverage::default(),
             ..Default::default()
         }
     }
