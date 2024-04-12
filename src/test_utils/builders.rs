@@ -34,8 +34,8 @@ pub trait InsertBranch {
 }
 
 pub trait InsertSection {
-    fn insert_section(self, key: SectionKey, value: SectionValue) -> Self;
-    fn insert_empty_section(self, key: SectionKey) -> Self;
+    fn insert_section(self, key: &str, value: SectionValue) -> Self;
+    fn insert_empty_section(self, key: &str) -> Self;
 }
 
 impl FromStr for SectionKey {
@@ -105,12 +105,12 @@ impl InsertBranch for SectionValue {
 }
 
 impl InsertSection for Report {
-    fn insert_section(mut self, key: SectionKey, value: SectionValue) -> Self {
-        self.sections.insert(key, value);
+    fn insert_section(mut self, key: &str, value: SectionValue) -> Self {
+        self.sections.insert(SectionKey::from_str(key), value);
         self
     }
 
-    fn insert_empty_section(self, key: SectionKey) -> Self {
+    fn insert_empty_section(self, key: &str) -> Self {
         self.insert_section(key, SectionValue::default())
     }
 }

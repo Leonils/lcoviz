@@ -88,8 +88,7 @@ mod test {
     use crate::{
         aggregation::{aggregated::assert_aggregated_counters_eq, with_path::WithPath},
         test_utils::builders::{
-            generate_2_lines_1_covered_section, generate_3_lines_2_covered_section, FromStr,
-            InsertSection,
+            generate_2_lines_1_covered_section, generate_3_lines_2_covered_section, InsertSection,
         },
     };
 
@@ -97,7 +96,7 @@ mod test {
         super::{tested_file::TestedFile, tested_module::TestedModule},
         ReportTree,
     };
-    use lcov::report::{section::Key as SectionKey, Report as LcovReport};
+    use lcov::report::Report as LcovReport;
 
     #[test]
     fn when_building_tree_with_an_empty_report_it_should_get_an_empty_report() {
@@ -109,8 +108,7 @@ mod test {
     #[test]
     fn when_building_tree_with_a_report_with_one_file_it_should_get_a_report_with_tested_file_child(
     ) {
-        let original_report =
-            LcovReport::new().insert_empty_section(SectionKey::from_str("main.cpp"));
+        let original_report = LcovReport::new().insert_empty_section("main.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -123,8 +121,7 @@ mod test {
     #[test]
     fn when_building_tree_with_a_report_with_one_file_nested_it_should_get_a_report_with_module_node(
     ) {
-        let original_report =
-            LcovReport::new().insert_empty_section(SectionKey::from_str("package/main.cpp"));
+        let original_report = LcovReport::new().insert_empty_section("package/main.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -139,8 +136,8 @@ mod test {
     #[test]
     fn when_building_tree_with_a_report_with_one_file_deeply_nested_it_should_get_a_report_with_module_node(
     ) {
-        let original_report = LcovReport::new()
-            .insert_empty_section(SectionKey::from_str("package/sub-package/main.cpp"));
+        let original_report =
+            LcovReport::new().insert_empty_section("package/sub-package/main.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -160,8 +157,8 @@ mod test {
     #[test]
     fn when_building_tree_with_report_2_files_at_root_shall_have_2_files_in_report_tree() {
         let original_report = LcovReport::new()
-            .insert_empty_section(SectionKey::from_str("main.cpp"))
-            .insert_empty_section(SectionKey::from_str("module.cpp"));
+            .insert_empty_section("main.cpp")
+            .insert_empty_section("module.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -176,8 +173,8 @@ mod test {
     #[test]
     fn when_building_tree_with_report_2_files_deeply_nested_shall_have_2_files_in_report_tree() {
         let original_report = LcovReport::new()
-            .insert_empty_section(SectionKey::from_str("my/package/main.cpp"))
-            .insert_empty_section(SectionKey::from_str("my/package/module.cpp"));
+            .insert_empty_section("my/package/main.cpp")
+            .insert_empty_section("my/package/module.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -197,8 +194,8 @@ mod test {
     #[test]
     fn when_building_tree_with_2_files_in_different_packages_both_packages_shall_exist_in_tree() {
         let original_report = LcovReport::new()
-            .insert_empty_section(SectionKey::from_str("my/package/main.cpp"))
-            .insert_empty_section(SectionKey::from_str("yours/module.cpp"));
+            .insert_empty_section("my/package/main.cpp")
+            .insert_empty_section("yours/module.cpp");
 
         let report_tree = ReportTree::from_original_report(original_report);
 
@@ -217,9 +214,8 @@ mod test {
     #[test]
     fn when_building_tree_with_1_file_deeply_nested_i_can_access_path_of_modules_along_path_to_file(
     ) {
-        let original_report = LcovReport::new()
-            .insert_empty_section(SectionKey::from_str("package/sub-package/main.cpp"));
-
+        let original_report =
+            LcovReport::new().insert_empty_section("package/sub-package/main.cpp");
         let report_tree = ReportTree::from_original_report(original_report);
 
         let package = report_tree.modules.get(0).unwrap();
@@ -244,10 +240,8 @@ mod test {
     #[test]
     fn when_building_tree_with_a_top_level_file_with_coverage_data_it_should_get_the_same_aggregate(
     ) {
-        let original_report = LcovReport::new().insert_section(
-            SectionKey::from_str("main.cpp"),
-            generate_3_lines_2_covered_section(),
-        );
+        let original_report =
+            LcovReport::new().insert_section("main.cpp", generate_3_lines_2_covered_section());
 
         let report_tree = ReportTree::from_original_report(original_report);
         let tested_file = report_tree.source_files.get(0).unwrap();
@@ -261,13 +255,10 @@ mod test {
     ) {
         let original_report = LcovReport::new()
             .insert_section(
-                SectionKey::from_str("module1/sub-module/main.cpp"),
+                "module1/sub-module/main.cpp",
                 generate_3_lines_2_covered_section(),
             )
-            .insert_section(
-                SectionKey::from_str("module2/main.cpp"),
-                generate_2_lines_1_covered_section(),
-            );
+            .insert_section("module2/main.cpp", generate_2_lines_1_covered_section());
 
         // Aggregate
         let report_tree = ReportTree::from_original_report(original_report);
