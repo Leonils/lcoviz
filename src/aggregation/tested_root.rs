@@ -2,7 +2,10 @@ use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 
-use super::{tested_file::TestedCodeFile, tested_module::TestedModule, with_path::WithPath};
+use super::{
+    input::AggregatorInput, tested_file::TestedCodeFile, tested_module::TestedModule,
+    with_path::WithPath,
+};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedRoot {
@@ -12,13 +15,13 @@ pub struct TestedRoot {
 }
 
 impl TestedRoot {
-    pub fn from_original_report(report: lcov::report::Report) -> Self {
+    pub fn new(args: AggregatorInput) -> Self {
         let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
             ..Default::default()
         };
 
-        for (section_key, section_value) in report.sections {
+        for (section_key, section_value) in args.list_sections() {
             tree.add_file(section_key, section_value)
         }
 
@@ -98,6 +101,10 @@ impl TestedRoot {
             modules,
             source_files: vec![],
         }
+    }
+
+    pub fn from_original_report(report: lcov::report::Report) -> Self {
+        TestedRoot::new(AggregatorInput::new(report))
     }
 }
 

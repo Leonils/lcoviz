@@ -210,6 +210,7 @@ impl Renderer for HtmlLightRenderer {
                 display: flex;
                 border-bottom: solid 1px #555;
                 margin-bottom: 30px;
+                margin-top: 30px;
             }}
             .coverage-stats-chip {{
                 border: solid 1px #555;
@@ -246,12 +247,19 @@ impl Renderer for HtmlLightRenderer {
         <main class=\"responsive-container\">
             <h1>Coverage report</h1>
             {}
+            <div class=\"top-module\"><h2>Top level files</h2></div>
+            {}
         </main>
     </body>
 </html>",
             root.get_container_children()
                 .iter()
                 .map(|module| self.render_top_module_row(module))
+                .collect::<Vec<String>>()
+                .join("\n"),
+            root.get_code_file_children()
+                .iter()
+                .map(|file| self.render_file_row(file))
                 .collect::<Vec<String>>()
                 .join("\n")
         );
