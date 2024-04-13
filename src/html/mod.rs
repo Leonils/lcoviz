@@ -62,9 +62,12 @@ impl<'a> Div<'a> {
         self.children.push(Box::new(Text::new(text)));
         self
     }
-    pub fn with_children(mut self, children: impl Iterator<Item = Box<dyn ToHtml + 'a>>) -> Self {
+    pub fn with_children<Element: ToHtml + 'a>(
+        mut self,
+        children: impl Iterator<Item = Element>,
+    ) -> Self {
         for child in children {
-            self.children.push(child);
+            self.children.push(Box::new(child));
         }
         self
     }
@@ -168,8 +171,7 @@ mod tests {
         let binding = vec![0, 1, 2];
         let children = binding
             .iter()
-            .map(|i| Div::new().with_child(Text::new(&format!("c{}", i))))
-            .map(|d| Box::new(d) as Box<dyn ToHtml>);
+            .map(|i| Div::new().with_child(Text::new(&format!("c{}", i))));
 
         let div = Div::new().with_class("my-class").with_children(children);
         assert_eq!(

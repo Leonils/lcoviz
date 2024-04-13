@@ -41,16 +41,16 @@ impl HtmlLightRenderer {
             .with_child(
                 Div::new()
                     .with_class("coverage-stats-chip-left")
-                    .with_child(Text::new(&format!(
+                    .with_text(&format!(
                         "{} {}/{}",
                         name, counter.covered_count, counter.count
-                    ))),
+                    )),
             )
             .with_child(
                 Div::new()
                     .with_class("coverage-stats-chip-right")
                     .with_class(&percentage_class)
-                    .with_child(Text::new(&self.render_optional_percentage(percentage))),
+                    .with_text(&self.render_optional_percentage(percentage)),
             );
 
         div
@@ -59,12 +59,13 @@ impl HtmlLightRenderer {
     fn render_aggregated_coverage_chips(
         &self,
         coverage: &crate::core::AggregatedCoverage,
-    ) -> Vec<Div> {
+    ) -> impl Iterator<Item = Div> {
         vec![
             self.render_aggregated_counter_chip("lines", &coverage.lines),
             self.render_aggregated_counter_chip("functions", &coverage.functions),
             self.render_aggregated_counter_chip("branches", &coverage.branches),
         ]
+        .into_iter()
     }
 
     fn render_aggregated_counters(
@@ -78,18 +79,18 @@ impl HtmlLightRenderer {
             Div::new()
                 .with_class("coverage-stats")
                 .with_class(percentage_class.as_str())
-                .with_child(Text::new(&format!(
-                    "{}/{}",
-                    counters.covered_count, counters.count
-                ))),
+                .with_text(&format!("{}/{}", counters.covered_count, counters.count)),
             Div::new()
                 .with_class("coverage-stats")
                 .with_class(percentage_class.as_str())
-                .with_child(Text::new(&self.render_optional_percentage(percentage))),
+                .with_text(&self.render_optional_percentage(percentage)),
         ]
     }
 
-    fn render_aggregated_coverage(&self, coverage: &crate::core::AggregatedCoverage) -> Vec<Div> {
+    fn render_aggregated_coverage(
+        &self,
+        coverage: &crate::core::AggregatedCoverage,
+    ) -> impl Iterator<Item = Div> {
         vec![
             self.render_aggregated_counters(&coverage.lines),
             self.render_aggregated_counters(&coverage.functions),
@@ -97,7 +98,6 @@ impl HtmlLightRenderer {
         ]
         .into_iter()
         .flatten()
-        .collect()
     }
 
     fn render_file_row(&self, file: &impl TestedFile) -> Div {
@@ -107,56 +107,22 @@ impl HtmlLightRenderer {
                 .with_child(
                     Div::new()
                         .with_class("item-name")
-                        .with_child(Text::new(file.get_name())),
+                        .with_text(file.get_name()),
                 )
-                .with_children(
-                    self.render_aggregated_coverage(file.get_aggregated_coverage())
-                        .into_iter()
-                        .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
-                ),
+                .with_children(self.render_aggregated_coverage(file.get_aggregated_coverage())),
         )
     }
 
     fn render_module_row(&self, module: &impl TestedContainer) -> Div {
-        //         format!(
-        //             "<div class=\"module-div\">
-        //     <div>
-        //         <div class=\"module-row\">
-        //             <div class=\"item-name\">{}</div>
-        //             {}
-        //         </div>
-        //         <div class=\"module-children\">
-        //             {}
-        //             {}
-        //         </div>
-        //     </div>
-        // </div>",
-        //             module.get_name(),
-        //             self.render_aggregated_coverage(module.get_aggregated_coverage()),
-        //             module
-        //                 .get_container_children()
-        //                 .iter()
-        //                 .map(|module| self.render_module_row(module))
-        //                 .collect::<Vec<String>>()
-        //                 .join("\n"),
-        //             module
-        //                 .get_code_file_children()
-        //                 .iter()
-        //                 .map(|file| self.render_file_row(file))
-        //                 .collect::<Vec<String>>()
-        //                 .join("\n")
-        //         )
         let submodules = module
             .get_container_children()
             .iter()
-            .map(|module| self.render_module_row(module))
-            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+            .map(|module| self.render_module_row(module));
 
         let files = module
             .get_code_file_children()
             .iter()
-            .map(|file| self.render_file_row(file))
-            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+            .map(|file| self.render_file_row(file));
 
         Div::new().with_class("module-div").with_child(
             Div::new()
@@ -166,12 +132,10 @@ impl HtmlLightRenderer {
                         .with_child(
                             Div::new()
                                 .with_class("item-name")
-                                .with_child(Text::new(module.get_name())),
+                                .with_text(module.get_name()),
                         )
                         .with_children(
-                            self.render_aggregated_coverage(module.get_aggregated_coverage())
-                                .into_iter()
-                                .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+                            self.render_aggregated_coverage(module.get_aggregated_coverage()),
                         ),
                 )
                 .with_child(
@@ -187,23 +151,17 @@ impl HtmlLightRenderer {
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h2(module.get_name()))
-            .with_children(
-                self.render_aggregated_coverage_chips(module.get_aggregated_coverage())
-                    .into_iter()
-                    .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
-            );
+            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()));
 
         let submodules = module
             .get_container_children()
             .iter()
-            .map(|module| self.render_module_row(module))
-            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+            .map(|module| self.render_module_row(module));
 
         let files = module
             .get_code_file_children()
             .iter()
-            .map(|file| self.render_file_row(file))
-            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+            .map(|file| self.render_file_row(file));
 
         Div::new()
             .with_class("top-module-card")
@@ -222,11 +180,7 @@ impl Renderer for HtmlLightRenderer {
         let root_top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h1("Coverage report"))
-            .with_children(
-                self.render_aggregated_coverage_chips(root.get_aggregated_coverage())
-                    .into_iter()
-                    .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
-            );
+            .with_children(self.render_aggregated_coverage_chips(root.get_aggregated_coverage()));
 
         let top_level_code_files = Div::new()
             .with_class("top-module-card")
@@ -239,8 +193,7 @@ impl Renderer for HtmlLightRenderer {
                 Div::new().with_class("module-children").with_children(
                     root.get_code_file_children()
                         .iter()
-                        .map(|file| self.render_file_row(file))
-                        .map(|row| Box::new(row) as Box<dyn ToHtml>),
+                        .map(|file| self.render_file_row(file)),
                 ),
             );
 
@@ -254,8 +207,7 @@ impl Renderer for HtmlLightRenderer {
             .with_children(
                 root.get_container_children()
                     .iter()
-                    .map(|module| self.render_top_module_row(module))
-                    .map(|row| Box::new(row) as Box<dyn ToHtml>),
+                    .map(|module| self.render_top_module_row(module)),
             )
             .with_child(top_level_code_files);
 
