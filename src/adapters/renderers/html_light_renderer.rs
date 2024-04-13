@@ -172,13 +172,12 @@ impl Renderer for HtmlLightRenderer {
             h1 {{
                 font-weight: 400;
                 font-size: xxx-large;
+                margin: 10px 10px 10px 0;
             }}
             h2 {{
                 font-weight: 400;
                 font-size: xx-large;
-                margin-right: 40px;
-                margin-bottom: 10px;
-                margin-top: 10px;
+                margin: 10px 40px 10px 0;
             }}
             .responsive-container {{
                 max-width: 1200px;
@@ -219,6 +218,9 @@ impl Renderer for HtmlLightRenderer {
                 border-radius: 4px;
                 padding: 2px;
             }}
+            .header {{
+                margin-bottom: 60px;
+            }}
             .top-module-card {{
                 margin-top: 20px;
                 border-radius: 4px;
@@ -230,7 +232,7 @@ impl Renderer for HtmlLightRenderer {
                 display: flex;
                 margin: 0 0 30px 20px;
             }}
-            .top-module > h2 {{
+            .top-module > h2, .top-module > h1 {{
                 flex-grow: 1;
             }}
             .coverage-stats-chip {{
@@ -278,7 +280,12 @@ impl Renderer for HtmlLightRenderer {
     </head>
     <body>
         <main class=\"responsive-container\">
-            <h1>Coverage report</h1>
+            <div class=\"top-module-card header\">
+                <div class=\"top-module\">
+                    <h1>Coverage report</h1>
+                    {}
+                </div>
+            </div>
             {}
             <div class=\"top-module-card\">
                 <div class=\"top-module\">
@@ -291,6 +298,7 @@ impl Renderer for HtmlLightRenderer {
         </main>
     </body>
 </html>",
+            self.render_aggregated_coverage_chips(root.get_aggregated_coverage()),
             root.get_container_children()
                 .iter()
                 .map(|module| self.render_top_module_row(module))
