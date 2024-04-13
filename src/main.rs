@@ -22,19 +22,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     let renderer = HtmlLightRenderer {};
 
     // overview
+    std::fs::create_dir_all(&output_path)?;
     let mut file =
-        std::fs::File::create(format!("{}/report.html", output_path.to_str().unwrap(),))?;
+        std::fs::File::create(output_path.join("index.html")).expect("Failed to create index.html");
     file.write_all(renderer.render_coverage_summary(&tested_root).as_bytes())?;
 
     // details
     for file in tested_root.enumerate_code_files() {
         println!("Rendering file: {}", file.get_file_path());
         let lines_provider = LocalFileLinesProvider::new(PathBuf::from(file.get_file_path()));
-        let mut f = std::fs::File::create(format!(
-            "{}/{}.html",
-            output_path.to_str().unwrap(),
-            file.get_name(),
-        ))?;
+        let mut target_path = output_path
+            .join("details")
+            .join(file.get_path_relative_to_prefix());
+        target_path.set_extension("html");
+
+        std::fs::create_dir_all(target_path.parent().unwrap())?;
+
+        let mut f = std::fs::File::create(target_path)?;
         f.write_all(
             renderer
                 .render_file_coverage_details(file, lines_provider)
