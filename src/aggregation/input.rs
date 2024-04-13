@@ -87,6 +87,10 @@ impl AggregatorInput {
             prefix,
         }
     }
+
+    pub fn get_prefix(&self) -> &str {
+        &self.prefix
+    }
 }
 
 #[cfg(test)]

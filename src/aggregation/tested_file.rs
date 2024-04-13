@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::core::{AggregatedCoverage, TestedFile};
 
 use super::with_path::WithPath;
@@ -8,6 +10,7 @@ use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 pub struct TestedCodeFile {
     file_name: String,
     path: String,
+    path_relative_to_prefix: String,
     aggregated: AggregatedCoverage,
     section: SectionValue,
 }
@@ -17,6 +20,7 @@ impl TestedCodeFile {
         TestedCodeFile {
             file_name: String::from(file_name),
             path: String::from(path),
+            path_relative_to_prefix: String::from(path),
             aggregated: AggregatedCoverage::default(),
             section: SectionValue::default(),
         }
@@ -26,12 +30,21 @@ impl TestedCodeFile {
         let path = key.source_file.to_str().unwrap().to_string();
         let file_name = path.split('/').last().unwrap().to_string();
         let aggregated = AggregatedCoverage::from_section(&value);
+        let binding = PathBuf::from(prefix);
+        let prefix_parts = binding.components().collect::<Vec<_>>();
+
+        let source_file_parts = key.source_file.components().skip(prefix_parts.len());
+        let path_relative_to_prefix = PathBuf::from_iter(source_file_parts)
+            .to_str()
+            .unwrap()
+            .to_string();
 
         TestedCodeFile {
             file_name,
             path,
             aggregated,
             section: value,
+            path_relative_to_prefix,
         }
     }
 }
@@ -43,6 +56,10 @@ impl TestedFile for TestedCodeFile {
 
     fn get_file_path(&self) -> &str {
         &self.path
+    }
+
+    fn get_path_relative_to_prefix(&self) -> &str {
+        &self.path_relative_to_prefix
     }
 
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
@@ -104,6 +121,18 @@ mod test {
 
         let tested_file = TestedCodeFile::from_section(key, value, "");
         assert_eq!(tested_file.file_name, "file.cpp");
+    }
+
+    #[test]
+    fn when_creating_from_a_section_with_a_prefix_it_shall_get_the_path_relative_to_prefix() {
+        let key = SectionKey {
+            source_file: std::path::PathBuf::from("path/file.cpp"),
+            test_name: String::from(""),
+        };
+        let value = SectionValue::default();
+
+        let tested_file = TestedCodeFile::from_section(key, value, "path/");
+        assert_eq!(tested_file.path_relative_to_prefix, "file.cpp");
     }
 
     #[test]

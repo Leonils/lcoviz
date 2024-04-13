@@ -2,10 +2,7 @@ use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 
-use super::{
-    input::AggregatorInput, tested_file::TestedCodeFile, tested_module::TestedModule,
-    with_path::WithPath,
-};
+use super::{input::AggregatorInput, tested_file::TestedCodeFile, tested_module::TestedModule};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedRoot {
@@ -22,7 +19,7 @@ impl TestedRoot {
         };
 
         for (section_key, section_value) in args.list_sections() {
-            tree.add_file(section_key, section_value);
+            tree.add_file(section_key, section_value, args.get_prefix());
         }
 
         tree
@@ -40,9 +37,15 @@ impl TestedRoot {
         self.modules.last_mut().unwrap()
     }
 
-    fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue) {
-        let file = TestedCodeFile::from_section(section_key, section_value, "");
-        let section_path = file.get_path();
+    fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue, prefix: &str) {
+        let file = TestedCodeFile::from_section(section_key, section_value, prefix);
+        let section_path = file
+            .get_path_relative_to_prefix()
+            .to_string()
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
 
         if section_path.is_empty() {
             println!("Empty path");
