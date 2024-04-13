@@ -2,6 +2,22 @@ trait ToHtml {
     fn to_html(&self) -> String;
 }
 
+struct Text {
+    content: String,
+}
+impl Text {
+    fn new(content: &str) -> Self {
+        Text {
+            content: content.to_string(),
+        }
+    }
+}
+impl ToHtml for Text {
+    fn to_html(&self) -> String {
+        self.content.clone()
+    }
+}
+
 struct Div {
     class_names: Vec<String>,
     children: Vec<Box<dyn ToHtml>>,
@@ -82,5 +98,19 @@ mod tests {
             div.to_html(),
             "<div class=\"my-class\"><div class=\"child1-class\" /><div class=\"child2-class\" /></div>"
         );
+    }
+
+    #[test]
+    fn text_shall_render() {
+        let text = Text::new("Hello, World!");
+        assert_eq!(text.to_html(), "Hello, World!");
+    }
+
+    #[test]
+    fn div_with_text_shall_render() {
+        let div = Div::new()
+            .with_class("my-class")
+            .with_child(Text::new("Hello, World!"));
+        assert_eq!(div.to_html(), "<div class=\"my-class\">Hello, World!</div>");
     }
 }
