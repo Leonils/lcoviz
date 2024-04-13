@@ -178,12 +178,12 @@ impl HtmlLightRenderer {
             let coverage = file.get_line_coverage(line_number as u32);
 
             let line_div = match coverage {
-                Some(i) if i > 0 => Div::new()
+                Some(cov) if cov > 0 => Div::new()
                     .with_class("line-covered")
-                    .with_text(&format!("{:4} | {:4} | {}", line_number, i, line)),
-                Some(_) => Div::new()
+                    .with_text(&format!("{:4} | {:4} | {}", line_number, cov, line)),
+                Some(cov) => Div::new()
                     .with_class("line-not-covered")
-                    .with_text(&format!("{:4} | {:4} | {}", line_number, i, line)),
+                    .with_text(&format!("{:4} | {:4} | {}", line_number, cov, line)),
                 None => Div::new()
                     .with_class("line-not-tested")
                     .with_text(&format!("{:4} |      | {}", line_number, line)),
