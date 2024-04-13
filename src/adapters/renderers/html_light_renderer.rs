@@ -31,10 +31,11 @@ impl HtmlLightRenderer {
         let percentage = counter.percentage();
         let percentage_class = self.get_percentage_class(&percentage);
         format!(
-            "<div class=\"coverage-stats-chip\">
+            "<div class=\"coverage-stats-chip {}\">
                 <div class=\"coverage-stats-chip-left\">{} {}/{}</div>
                 <div class=\"coverage-stats-chip-right {}\">{}</div>
             </div>",
+            format!("{}-chip", percentage_class),
             name,
             counter.covered_count,
             counter.count,
@@ -87,7 +88,10 @@ impl HtmlLightRenderer {
     fn render_file_row(&self, file: &impl TestedFile) -> String {
         format!(
             "<div>
-    <div class=\"file-row\"><div class=\"item-name\">{}</div>{}</div>
+    <div class=\"file-row\">
+        <div class=\"item-name\">{}</div>
+        {}
+    </div>
 </div>",
             file.get_name(),
             self.render_aggregated_coverage(file.get_aggregated_coverage()),
@@ -97,10 +101,15 @@ impl HtmlLightRenderer {
     fn render_module_row(&self, module: &impl TestedContainer) -> String {
         format!(
             "<div class=\"module-div\">
-    <div><div class=\"module-row\"><div class=\"item-name\">{}</div>{}</div>
-    <div class=\"module-children\">
-        {}
-        {}
+    <div>
+        <div class=\"module-row\">
+            <div class=\"item-name\">{}</div>
+            {}
+        </div>
+        <div class=\"module-children\">
+            {}
+            {}
+        </div>
     </div>
 </div>",
             module.get_name(),
@@ -122,10 +131,14 @@ impl HtmlLightRenderer {
 
     fn render_top_module_row(&self, module: &impl TestedContainer) -> String {
         format!(
-            "<div class=\"top-module\"><h2>{}</h2>{}</div>
-<div class=\"module-children\">
-    {}
-    {}
+            "<div class=\"top-module-card\">
+    <div class=\"top-module\">
+        <h2>{}</h2> {}
+    </div>
+    <div class=\"module-children\">
+        {}
+        {}
+    </div>
 </div>",
             module.get_name(),
             self.render_aggregated_coverage_chips(module.get_aggregated_coverage()),
@@ -206,28 +219,36 @@ impl Renderer for HtmlLightRenderer {
                 border-radius: 4px;
                 padding: 2px;
             }}
+            .top-module-card {{
+                margin-top: 20px;
+                border-radius: 4px;
+                background-color: #fff;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }}
             .top-module {{
                 display: flex;
-                border-bottom: solid 1px #555;
-                margin-bottom: 30px;
-                margin-top: 30px;
+                margin: 0 0 30px 20px;
+            }}
+            .top-module > h2 {{
+                flex-grow: 1;
             }}
             .coverage-stats-chip {{
-                border: solid 1px #555;
+                border: solid 2px #555;
                 margin: auto 0 auto 10px;
-                border-radius: 10px;
+                border-radius: 15px;
                 display: flex;
                 position: relative;
             }}
             .coverage-stats-chip-left {{
                 padding: 4px 10px;
-                border-radius: 10px 0 0 10px;
+                border-radius: 15px 0 0 15px;
                 text-align: right;
                 background-color: #fff;
             }}
             .coverage-stats-chip-right {{
                 padding: 4px 10px;
-                border-radius: 0 10px 10px 0;
+                border-radius: 0 15px 15px 0;
             }}
             .percentage-0 {{ background-color: #c10000aa; color: #fff; }}
             .percentage-1 {{ background-color: #c12e00aa; color: #fff; }}
@@ -241,14 +262,32 @@ impl Renderer for HtmlLightRenderer {
             .percentage-9 {{ background-color: #6ccd24aa; color: #fff; }}
             .percentage-10 {{ background-color: #51af22aa; color: #fff; }}
             .no-coverage {{ background-color: #ddddddaa; color: #000; }}
+            .percentage-0-chip {{ border-color: #c10000aa; }}
+            .percentage-1-chip {{ border-color: #c12e00aa; }}
+            .percentage-2-chip {{ border-color: #cf461baa; }}
+            .percentage-3-chip {{ border-color: #eb5f1baa; }}
+            .percentage-4-chip {{ border-color: #e77724aa; }}
+            .percentage-5-chip {{ border-color: #e7ac24aa; }}
+            .percentage-6-chip {{ border-color: #e7be24aa; }}
+            .percentage-7-chip {{ border-color: #e3e724aa; }}
+            .percentage-8-chip {{ border-color: #b6e724aa; }}
+            .percentage-9-chip {{ border-color: #6ccd24aa; }}
+            .percentage-10-chip {{ border-color: #51af22aa; }}
+            .no-coverage-chip {{ border-color: #ddddddaa; }}
         </style>
     </head>
     <body>
         <main class=\"responsive-container\">
             <h1>Coverage report</h1>
             {}
-            <div class=\"top-module\"><h2>Top level files</h2></div>
-            {}
+            <div class=\"top-module-card\">
+                <div class=\"top-module\">
+                    <h2>Top level code files</h2>
+                </div>
+                <div class=\"module-children\">
+                    {}
+                </div>
+            </div>
         </main>
     </body>
 </html>",
