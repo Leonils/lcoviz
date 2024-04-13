@@ -1,43 +1,64 @@
-trait ToHtml {
+pub trait ToHtml {
     fn to_html(&self) -> String;
 }
 
-struct Text {
+pub struct Text {
+    level: u8,
     content: String,
 }
 impl Text {
-    fn new(content: &str) -> Self {
+    pub fn new(content: &str) -> Self {
         Text {
+            level: 0,
+            content: content.to_string(),
+        }
+    }
+
+    pub fn h1(content: &str) -> Self {
+        Text {
+            level: 1,
+            content: content.to_string(),
+        }
+    }
+
+    pub fn h2(content: &str) -> Self {
+        Text {
+            level: 2,
             content: content.to_string(),
         }
     }
 }
 impl ToHtml for Text {
     fn to_html(&self) -> String {
-        self.content.clone()
+        match self.level {
+            0 => self.content.clone(),
+            1 => format!("<h1>{}</h1>", self.content),
+            2 => format!("<h2>{}</h2>", self.content),
+            _ => panic!("Unsupported level: {}", self.level),
+        }
     }
 }
 
-struct Div<'a> {
+pub struct Div<'a> {
     class_names: Vec<String>,
     children: Vec<Box<dyn ToHtml + 'a>>,
 }
 impl<'a> Div<'a> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Div {
             class_names: Vec::new(),
             children: Vec::new(),
         }
     }
-    fn with_class(mut self, class: &'a str) -> Self {
+    pub fn with_class(mut self, class: &str) -> Self {
         self.class_names.push(class.to_string());
         self
     }
-    fn with_child(mut self, child: impl ToHtml + 'a) -> Self {
+    pub fn with_child(mut self, child: impl ToHtml + 'a) -> Self {
         self.children.push(Box::new(child));
         self
     }
-    fn with_children(mut self, children: impl Iterator<Item = Box<dyn ToHtml + 'a>>) -> Self {
+    pub fn with_children(mut self, children: impl Iterator<Item = Box<dyn ToHtml + 'a>>) -> Self {
         for child in children {
             self.children.push(child);
         }
@@ -110,6 +131,18 @@ mod tests {
     fn text_shall_render() {
         let text = Text::new("Hello, World!");
         assert_eq!(text.to_html(), "Hello, World!");
+    }
+
+    #[test]
+    fn h1_shall_render() {
+        let text = Text::h1("Hello, World!");
+        assert_eq!(text.to_html(), "<h1>Hello, World!</h1>");
+    }
+
+    #[test]
+    fn h2_shall_render() {
+        let text = Text::h2("Hello, World!");
+        assert_eq!(text.to_html(), "<h2>Hello, World!</h2>");
     }
 
     #[test]

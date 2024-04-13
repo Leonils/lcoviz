@@ -1,4 +1,7 @@
-use crate::core::{Renderer, TestedContainer, TestedFile};
+use crate::{
+    core::{Renderer, TestedContainer, TestedFile},
+    html::{Div, Text, ToHtml},
+};
 
 pub struct HtmlLightRenderer {
     // ...
@@ -27,33 +30,41 @@ impl HtmlLightRenderer {
         &self,
         name: &str,
         counter: &crate::core::AggregatedCoverageCounters,
-    ) -> String {
+    ) -> Div {
         let percentage = counter.percentage();
         let percentage_class = self.get_percentage_class(&percentage);
-        format!(
-            "<div class=\"coverage-stats-chip {}\">
-                <div class=\"coverage-stats-chip-left\">{} {}/{}</div>
-                <div class=\"coverage-stats-chip-right {}\">{}</div>
-            </div>",
-            format!("{}-chip", percentage_class),
-            name,
-            counter.covered_count,
-            counter.count,
-            percentage_class,
-            &self.render_optional_percentage(percentage)
-        )
+        let percentage_chip_class = format!("{}-chip", percentage_class);
+
+        let div = Div::new()
+            .with_class("coverage-stats-chip")
+            .with_class(percentage_chip_class.as_str())
+            .with_child(
+                Div::new()
+                    .with_class("coverage-stats-chip-left")
+                    .with_child(Text::new(&format!(
+                        "{} {}/{}",
+                        name, counter.covered_count, counter.count
+                    ))),
+            )
+            .with_child(
+                Div::new()
+                    .with_class("coverage-stats-chip-right")
+                    .with_class(&percentage_class)
+                    .with_child(Text::new(&self.render_optional_percentage(percentage))),
+            );
+
+        div
     }
 
     fn render_aggregated_coverage_chips(
         &self,
         coverage: &crate::core::AggregatedCoverage,
-    ) -> String {
-        format!(
-            "{}{}{}",
+    ) -> Vec<Div> {
+        vec![
             self.render_aggregated_counter_chip("lines", &coverage.lines),
             self.render_aggregated_counter_chip("functions", &coverage.functions),
-            self.render_aggregated_counter_chip("branches", &coverage.branches)
-        )
+            self.render_aggregated_counter_chip("branches", &coverage.branches),
+        ]
     }
 
     fn render_aggregated_counters(
@@ -130,18 +141,24 @@ impl HtmlLightRenderer {
     }
 
     fn render_top_module_row(&self, module: &impl TestedContainer) -> String {
+        let top_module_div = Div::new()
+            .with_class("top-module")
+            .with_child(Text::h2(module.get_name()))
+            .with_children(
+                self.render_aggregated_coverage_chips(module.get_aggregated_coverage())
+                    .into_iter()
+                    .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+            );
+
         format!(
             "<div class=\"top-module-card\">
-    <div class=\"top-module\">
-        <h2>{}</h2> {}
-    </div>
+    {}
     <div class=\"module-children\">
         {}
         {}
     </div>
 </div>",
-            module.get_name(),
-            self.render_aggregated_coverage_chips(module.get_aggregated_coverage()),
+            top_module_div.to_html(),
             module
                 .get_container_children()
                 .iter()
@@ -160,6 +177,15 @@ impl HtmlLightRenderer {
 
 impl Renderer for HtmlLightRenderer {
     fn render_coverage_summary(&self, root: impl crate::core::TestedContainer) -> String {
+        let root_top_module_div = Div::new()
+            .with_class("top-module")
+            .with_child(Text::h1("Coverage report"))
+            .with_children(
+                self.render_aggregated_coverage_chips(root.get_aggregated_coverage())
+                    .into_iter()
+                    .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+            );
+
         return format!(
             "<html>
     <head>
@@ -281,10 +307,7 @@ impl Renderer for HtmlLightRenderer {
     <body>
         <main class=\"responsive-container\">
             <div class=\"top-module-card header\">
-                <div class=\"top-module\">
-                    <h1>Coverage report</h1>
-                    {}
-                </div>
+                {}
             </div>
             {}
             <div class=\"top-module-card\">
@@ -298,7 +321,7 @@ impl Renderer for HtmlLightRenderer {
         </main>
     </body>
 </html>",
-            self.render_aggregated_coverage_chips(root.get_aggregated_coverage()),
+            root_top_module_div.to_html(),
             root.get_container_children()
                 .iter()
                 .map(|module| self.render_top_module_row(module))
