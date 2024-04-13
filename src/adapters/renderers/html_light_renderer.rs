@@ -17,10 +17,10 @@ impl HtmlLightRenderer {
     fn get_percentage_class(&self, percentage: &Option<f32>) -> String {
         percentage
             .map(|p| {
-                let first_digit = p.to_string().chars().next().unwrap();
                 if p == 100.0 {
                     return String::from("percentage-10");
                 }
+                let first_digit = p.to_string().chars().next().unwrap();
                 return format!("percentage-{}", first_digit);
             })
             .unwrap_or(String::from("no-coverage"))
@@ -188,7 +188,7 @@ impl Renderer for HtmlLightRenderer {
             .with_child(
                 Div::new().with_class("module-children").with_children(
                     root.get_code_file_children()
-                        .map(|file| self.render_file_row(file)), // Fix: Call render_file_row with the file argument
+                        .map(|file| self.render_file_row(file)),
                 ),
             );
 
