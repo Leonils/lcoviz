@@ -58,6 +58,10 @@ impl<'a> Div<'a> {
         self.children.push(Box::new(child));
         self
     }
+    pub fn with_text(mut self, text: &str) -> Self {
+        self.children.push(Box::new(Text::new(text)));
+        self
+    }
     pub fn with_children(mut self, children: impl Iterator<Item = Box<dyn ToHtml + 'a>>) -> Self {
         for child in children {
             self.children.push(child);
@@ -150,6 +154,12 @@ mod tests {
         let div = Div::new()
             .with_class("my-class")
             .with_child(Text::new("Hello, World!"));
+        assert_eq!(div.to_html(), "<div class=\"my-class\">Hello, World!</div>");
+    }
+
+    #[test]
+    fn div_with_direct_text_shall_render() {
+        let div = Div::new().with_class("my-class").with_text("Hello, World!");
         assert_eq!(div.to_html(), "<div class=\"my-class\">Hello, World!</div>");
     }
 

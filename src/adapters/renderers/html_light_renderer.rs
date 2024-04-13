@@ -70,77 +70,120 @@ impl HtmlLightRenderer {
     fn render_aggregated_counters(
         &self,
         counters: &crate::core::AggregatedCoverageCounters,
-    ) -> String {
+    ) -> Vec<Div> {
         let percentage = counters.percentage();
         let percentage_class = self.get_percentage_class(&percentage);
 
-        format!(
-            "
-                <div class=\"coverage-stats {}\">{}/{}</div>
-                <div class=\"coverage-stats {}\">{}</div>
-            ",
-            percentage_class,
-            counters.covered_count,
-            counters.count,
-            percentage_class,
-            &self.render_optional_percentage(counters.percentage()),
-        )
+        vec![
+            Div::new()
+                .with_class("coverage-stats")
+                .with_class(percentage_class.as_str())
+                .with_child(Text::new(&format!(
+                    "Covered: {}/{}",
+                    counters.covered_count, counters.count
+                ))),
+            Div::new()
+                .with_class("coverage-stats")
+                .with_class(percentage_class.as_str())
+                .with_child(Text::new(&self.render_optional_percentage(percentage))),
+        ]
     }
 
-    fn render_aggregated_coverage(&self, coverage: &crate::core::AggregatedCoverage) -> String {
-        format!(
-            "{}{}{}",
+    fn render_aggregated_coverage(&self, coverage: &crate::core::AggregatedCoverage) -> Vec<Div> {
+        vec![
             self.render_aggregated_counters(&coverage.lines),
             self.render_aggregated_counters(&coverage.functions),
-            self.render_aggregated_counters(&coverage.branches)
+            self.render_aggregated_counters(&coverage.branches),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+
+    fn render_file_row(&self, file: &impl TestedFile) -> Div {
+        Div::new().with_child(
+            Div::new()
+                .with_class("file-row")
+                .with_child(
+                    Div::new()
+                        .with_class("item-name")
+                        .with_child(Text::new(file.get_name())),
+                )
+                .with_children(
+                    self.render_aggregated_coverage(file.get_aggregated_coverage())
+                        .into_iter()
+                        .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+                ),
         )
     }
 
-    fn render_file_row(&self, file: &impl TestedFile) -> String {
-        format!(
-            "<div>
-    <div class=\"file-row\">
-        <div class=\"item-name\">{}</div>
-        {}
-    </div>
-</div>",
-            file.get_name(),
-            self.render_aggregated_coverage(file.get_aggregated_coverage()),
+    fn render_module_row(&self, module: &impl TestedContainer) -> Div {
+        //         format!(
+        //             "<div class=\"module-div\">
+        //     <div>
+        //         <div class=\"module-row\">
+        //             <div class=\"item-name\">{}</div>
+        //             {}
+        //         </div>
+        //         <div class=\"module-children\">
+        //             {}
+        //             {}
+        //         </div>
+        //     </div>
+        // </div>",
+        //             module.get_name(),
+        //             self.render_aggregated_coverage(module.get_aggregated_coverage()),
+        //             module
+        //                 .get_container_children()
+        //                 .iter()
+        //                 .map(|module| self.render_module_row(module))
+        //                 .collect::<Vec<String>>()
+        //                 .join("\n"),
+        //             module
+        //                 .get_code_file_children()
+        //                 .iter()
+        //                 .map(|file| self.render_file_row(file))
+        //                 .collect::<Vec<String>>()
+        //                 .join("\n")
+        //         )
+        let submodules = module
+            .get_container_children()
+            .iter()
+            .map(|module| self.render_module_row(module))
+            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+
+        let files = module
+            .get_code_file_children()
+            .iter()
+            .map(|file| self.render_file_row(file))
+            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+
+        Div::new().with_class("module-div").with_child(
+            Div::new()
+                .with_child(
+                    Div::new()
+                        .with_class("module-row")
+                        .with_child(
+                            Div::new()
+                                .with_class("item-name")
+                                .with_child(Text::new(module.get_name())),
+                        )
+                        .with_children(
+                            self.render_aggregated_coverage(module.get_aggregated_coverage())
+                                .into_iter()
+                                .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+                        ),
+                )
+                .with_child(
+                    Div::new()
+                        .with_class("module-children")
+                        .with_children(submodules)
+                        .with_children(files),
+                ),
         )
     }
 
-    fn render_module_row(&self, module: &impl TestedContainer) -> String {
-        format!(
-            "<div class=\"module-div\">
-    <div>
-        <div class=\"module-row\">
-            <div class=\"item-name\">{}</div>
-            {}
-        </div>
-        <div class=\"module-children\">
-            {}
-            {}
-        </div>
-    </div>
-</div>",
-            module.get_name(),
-            self.render_aggregated_coverage(module.get_aggregated_coverage()),
-            module
-                .get_container_children()
-                .iter()
-                .map(|module| self.render_module_row(module))
-                .collect::<Vec<String>>()
-                .join("\n"),
-            module
-                .get_code_file_children()
-                .iter()
-                .map(|file| self.render_file_row(file))
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
-    }
-
-    fn render_top_module_row(&self, module: &impl TestedContainer) -> String {
+    fn render_top_module_row(&self, module: &impl TestedContainer) -> Div {
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h2(module.get_name()))
@@ -150,28 +193,27 @@ impl HtmlLightRenderer {
                     .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
             );
 
-        format!(
-            "<div class=\"top-module-card\">
-    {}
-    <div class=\"module-children\">
-        {}
-        {}
-    </div>
-</div>",
-            top_module_div.to_html(),
-            module
-                .get_container_children()
-                .iter()
-                .map(|module| self.render_module_row(module))
-                .collect::<Vec<String>>()
-                .join("\n"),
-            module
-                .get_code_file_children()
-                .iter()
-                .map(|file| self.render_file_row(file))
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
+        let submodules = module
+            .get_container_children()
+            .iter()
+            .map(|module| self.render_module_row(module))
+            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+
+        let files = module
+            .get_code_file_children()
+            .iter()
+            .map(|file| self.render_file_row(file))
+            .map(|row| Box::new(row) as Box<dyn ToHtml>);
+
+        Div::new()
+            .with_class("top-module-card")
+            .with_child(top_module_div)
+            .with_child(
+                Div::new()
+                    .with_class("module-children")
+                    .with_children(submodules)
+                    .with_children(files),
+            )
     }
 }
 
@@ -184,6 +226,37 @@ impl Renderer for HtmlLightRenderer {
                 self.render_aggregated_coverage_chips(root.get_aggregated_coverage())
                     .into_iter()
                     .map(|chip| Box::new(chip) as Box<dyn ToHtml>),
+            );
+
+        let top_level_code_files = Div::new()
+            .with_class("top-module-card")
+            .with_child(
+                Div::new()
+                    .with_class("top-module")
+                    .with_child(Text::h2("Top level code files")),
+            )
+            .with_child(
+                Div::new().with_class("module-children").with_children(
+                    root.get_code_file_children()
+                        .iter()
+                        .map(|file| self.render_file_row(file))
+                        .map(|row| Box::new(row) as Box<dyn ToHtml>),
+                ),
+            );
+
+        let main = Div::new()
+            .with_child(
+                Div::new()
+                    .with_class("top-module-card")
+                    .with_class("header")
+                    .with_child(root_top_module_div),
+            )
+            .with_child(top_level_code_files)
+            .with_children(
+                root.get_container_children()
+                    .iter()
+                    .map(|module| self.render_top_module_row(module))
+                    .map(|row| Box::new(row) as Box<dyn ToHtml>),
             );
 
         return format!(
@@ -306,32 +379,11 @@ impl Renderer for HtmlLightRenderer {
     </head>
     <body>
         <main class=\"responsive-container\">
-            <div class=\"top-module-card header\">
-                {}
-            </div>
             {}
-            <div class=\"top-module-card\">
-                <div class=\"top-module\">
-                    <h2>Top level code files</h2>
-                </div>
-                <div class=\"module-children\">
-                    {}
-                </div>
-            </div>
         </main>
     </body>
 </html>",
-            root_top_module_div.to_html(),
-            root.get_container_children()
-                .iter()
-                .map(|module| self.render_top_module_row(module))
-                .collect::<Vec<String>>()
-                .join("\n"),
-            root.get_code_file_children()
-                .iter()
-                .map(|file| self.render_file_row(file))
-                .collect::<Vec<String>>()
-                .join("\n")
+            main.to_html()
         );
     }
 
