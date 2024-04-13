@@ -22,7 +22,7 @@ impl TestedRoot {
         };
 
         for (section_key, section_value) in args.list_sections() {
-            tree.add_file(section_key, section_value)
+            tree.add_file(section_key, section_value);
         }
 
         tree
@@ -41,7 +41,7 @@ impl TestedRoot {
     }
 
     fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue) {
-        let file = TestedCodeFile::from_section(section_key, section_value);
+        let file = TestedCodeFile::from_section(section_key, section_value, "");
         let section_path = file.get_path();
 
         if section_path.is_empty() {

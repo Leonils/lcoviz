@@ -22,7 +22,7 @@ impl TestedCodeFile {
         }
     }
 
-    pub fn from_section(key: SectionKey, value: SectionValue) -> Self {
+    pub fn from_section(key: SectionKey, value: SectionValue, prefix: &str) -> Self {
         let path = key.source_file.to_str().unwrap().to_string();
         let file_name = path.split('/').last().unwrap().to_string();
         let aggregated = AggregatedCoverage::from_section(&value);
@@ -102,7 +102,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedCodeFile::from_section(key, value);
+        let tested_file = TestedCodeFile::from_section(key, value, "");
         assert_eq!(tested_file.file_name, "file.cpp");
     }
 
@@ -114,7 +114,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedCodeFile::from_section(key, value);
+        let tested_file = TestedCodeFile::from_section(key, value, "");
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 0, 0);
     }
 
@@ -127,7 +127,7 @@ mod test {
 
         let section_value = generate_3_lines_2_covered_section();
 
-        let tested_file = TestedCodeFile::from_section(key, section_value);
+        let tested_file = TestedCodeFile::from_section(key, section_value, "");
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
     }
 }

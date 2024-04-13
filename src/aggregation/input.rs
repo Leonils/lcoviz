@@ -3,35 +3,47 @@ use std::collections::BTreeMap;
 
 pub struct AggregatorInput {
     report: lcov::report::Report,
+    prefix: String,
 }
 
 impl AggregatorInput {
     pub fn new(report: lcov::report::Report) -> Self {
-        Self { report }
+        Self {
+            report,
+            prefix: String::new(),
+        }
     }
 
     pub fn list_sections(&self) -> BTreeMap<SectionKey, SectionValue> {
         self.report.sections.clone()
     }
 
-    pub fn with_prefix(&self, prefix: &str) -> AggregatorInput {
-        let mut report = self.report.clone();
-        let sections = report.sections.clone();
-        let new_sections = sections
-            .into_iter()
-            .map(|(key, value)| {
-                let mut new_key = key.clone();
+    pub fn with_prefix(self, prefix: &str) -> AggregatorInput {
+        let prefix_parts = prefix
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<&str>>();
+        for (key, _) in self.report.sections.iter() {
+            let source_file_parts = key
+                .source_file
+                .to_str()
+                .unwrap()
+                .split('/')
+                .collect::<Vec<&str>>();
 
-                // remove prefix from the source file
-                let source_file = new_key.source_file.to_str().unwrap();
-                let new_source_file = source_file.trim_start_matches(prefix);
-                new_key.source_file = std::path::PathBuf::from(new_source_file);
+            if !source_file_parts.starts_with(&prefix_parts) {
+                panic!(
+                    "Some tested files do not start with the prefix '{}'. For example, {}",
+                    prefix,
+                    key.source_file.to_str().unwrap()
+                );
+            }
+        }
 
-                (new_key, value)
-            })
-            .collect();
-        report.sections = new_sections;
-        AggregatorInput::new(report)
+        AggregatorInput {
+            report: self.report,
+            prefix: prefix.to_string(),
+        }
     }
 
     fn drop_file_name(source_file: &str) -> Vec<&str> {
@@ -68,9 +80,12 @@ impl AggregatorInput {
         return prefix.join("/");
     }
 
-    pub fn with_longest_prefix(&self) -> AggregatorInput {
+    pub fn with_longest_prefix(self) -> AggregatorInput {
         let prefix = self.find_longest_prefix();
-        self.with_prefix(&prefix)
+        AggregatorInput {
+            report: self.report,
+            prefix,
+        }
     }
 }
 
@@ -90,25 +105,17 @@ mod test {
         let report = lcov::report::Report::new().insert_empty_section("my/very/long/path/file.cpp");
         let input = AggregatorInput::new(report.clone());
         let new_input = input.with_prefix("my/very/long/path/");
-        let new_sections = new_input.list_sections();
-        assert_eq!(new_sections.len(), 1);
-        assert_eq!(
-            new_sections.keys().next().unwrap().source_file,
-            std::path::PathBuf::from("file.cpp")
-        );
+        assert_eq!(new_input.prefix, "my/very/long/path/");
     }
 
     #[test]
-    fn test_prefix_not_found_list_sectiosn() {
-        let report = lcov::report::Report::new().insert_empty_section("my/very/long/path/file.cpp");
+    #[should_panic(
+        expected = "Some tested files do not start with the prefix 'my/very/long/path/'. For example, another/prefix/file.cpp"
+    )]
+    fn test_with_prefix_list_sections_with_invalid_prefix() {
+        let report = lcov::report::Report::new().insert_empty_section("another/prefix/file.cpp");
         let input = AggregatorInput::new(report.clone());
-        let new_input = input.with_prefix("my/very/long/path2/");
-        let new_sections = new_input.list_sections();
-        assert_eq!(new_sections.len(), 1);
-        assert_eq!(
-            new_sections.keys().next().unwrap().source_file,
-            std::path::PathBuf::from("my/very/long/path/file.cpp")
-        );
+        input.with_prefix("my/very/long/path/");
     }
 
     #[test]
@@ -141,5 +148,15 @@ mod test {
             .insert_empty_section("my/very/long/path2/file2.cpp");
         let input = AggregatorInput::new(report.clone());
         assert_eq!(input.find_longest_prefix(), "my/very/long");
+    }
+
+    #[test]
+    fn test_with_longest_prefix() {
+        let report = lcov::report::Report::new()
+            .insert_empty_section("my/very/long/path/file.cpp")
+            .insert_empty_section("my/very/long/path/file2.cpp");
+        let input = AggregatorInput::new(report.clone());
+        let new_input = input.with_longest_prefix();
+        assert_eq!(new_input.prefix, "my/very/long/path");
     }
 }
