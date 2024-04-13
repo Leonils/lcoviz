@@ -79,7 +79,7 @@ impl HtmlLightRenderer {
                 .with_class("coverage-stats")
                 .with_class(percentage_class.as_str())
                 .with_child(Text::new(&format!(
-                    "Covered: {}/{}",
+                    "{}/{}",
                     counters.covered_count, counters.count
                 ))),
             Div::new()
@@ -251,13 +251,13 @@ impl Renderer for HtmlLightRenderer {
                     .with_class("header")
                     .with_child(root_top_module_div),
             )
-            .with_child(top_level_code_files)
             .with_children(
                 root.get_container_children()
                     .iter()
                     .map(|module| self.render_top_module_row(module))
                     .map(|row| Box::new(row) as Box<dyn ToHtml>),
-            );
+            )
+            .with_child(top_level_code_files);
 
         return format!(
             "<html>
