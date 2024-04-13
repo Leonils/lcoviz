@@ -32,6 +32,7 @@ pub trait TestedFile {
     fn get_name(&self) -> &str;
     fn get_file_path(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
+    fn get_line_coverage(&self, line: u32) -> Option<u64>;
 }
 
 pub trait TestedContainer {

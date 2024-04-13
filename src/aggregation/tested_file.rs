@@ -1,6 +1,7 @@
 use crate::core::{AggregatedCoverage, TestedFile};
 
 use super::with_path::WithPath;
+use lcov::report::section::line::Key as LineKey;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 #[derive(Debug, PartialEq, Default)]
@@ -8,6 +9,7 @@ pub struct TestedCodeFile {
     file_name: String,
     path: String,
     aggregated: AggregatedCoverage,
+    section: SectionValue,
 }
 
 impl TestedCodeFile {
@@ -16,18 +18,20 @@ impl TestedCodeFile {
             file_name: String::from(file_name),
             path: String::from(path),
             aggregated: AggregatedCoverage::default(),
+            section: SectionValue::default(),
         }
     }
 
     pub fn from_section(key: SectionKey, value: SectionValue) -> Self {
         let path = key.source_file.to_str().unwrap().to_string();
         let file_name = path.split('/').last().unwrap().to_string();
-        let aggregated = AggregatedCoverage::from_section(value);
+        let aggregated = AggregatedCoverage::from_section(&value);
 
         TestedCodeFile {
             file_name,
             path,
             aggregated,
+            section: value,
         }
     }
 }
@@ -43,6 +47,13 @@ impl TestedFile for TestedCodeFile {
 
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
+    }
+
+    fn get_line_coverage(&self, line: u32) -> Option<u64> {
+        self.section
+            .lines
+            .get(&LineKey { line })
+            .map_or(None, |value| Some(value.count))
     }
 }
 

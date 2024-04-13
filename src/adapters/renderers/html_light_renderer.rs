@@ -170,6 +170,29 @@ impl HtmlLightRenderer {
                     .with_children(files),
             )
     }
+
+    fn render_lines(&self, file: &impl crate::core::TestedFile, lines: Vec<String>) -> String {
+        let mut result = String::new();
+        for (i, line) in lines.iter().enumerate() {
+            let line_number = i + 1;
+            let coverage = file.get_line_coverage(line_number as u32);
+
+            let line_div = match coverage {
+                Some(i) if i > 0 => Div::new()
+                    .with_class("line-covered")
+                    .with_text(&format!("{:4} | {:4} | {}", line_number, i, line)),
+                Some(_) => Div::new()
+                    .with_class("line-not-covered")
+                    .with_text(&format!("{:4} | {:4} | {}", line_number, i, line)),
+                None => Div::new()
+                    .with_class("line-not-tested")
+                    .with_text(&format!("{:4} |      | {}", line_number, line)),
+            };
+
+            result.push_str(&line_div.to_html());
+        }
+        return result;
+    }
 }
 
 impl Renderer for HtmlLightRenderer {
@@ -233,13 +256,33 @@ impl Renderer for HtmlLightRenderer {
         let lines = file_provider.get_file_lines().unwrap();
         return format!(
             "<html>
+    <head>
+        <title>Coverage report</title>
+        <style type=\"text/css\">
+            {}
+        </style>
+    </head>
     <body>
-        <h1>File: {}</h1>
-        <pre>{}</pre>
+        <main class=\"responsive-container\">
+            <div class=\"top-module-card\">
+                <div class=\"top-module\">
+                    <h1>File: {}</h1>
+                    {}
+                </div>
+            </div>
+            <div class=\"top-module-card\">
+                <h2>Lines</h2>
+                <pre>{}</pre>
+            </div>
+        </main>
     </body>
 </html>",
+            DEFAULT_CSS,
             file.get_name(),
-            lines.join("\n")
+            self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
+                .map(|chip| chip.to_html())
+                .collect::<String>(),
+            self.render_lines(file, lines)
         );
     }
 }
@@ -356,4 +399,6 @@ const DEFAULT_CSS: &str = "
     .percentage-9-chip { border-color: #6ccd24aa; }
     .percentage-10-chip { border-color: #51af22aa; }
     .no-coverage-chip { border-color: #ddddddaa; }
+    .line-covered { background-color: #b0dfb0; }
+    .line-not-covered { background-color: #dfb0b0; }
 ";
