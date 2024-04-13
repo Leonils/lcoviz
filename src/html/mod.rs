@@ -18,27 +18,33 @@ impl ToHtml for Text {
     }
 }
 
-struct Div {
+struct Div<'a> {
     class_names: Vec<String>,
-    children: Vec<Box<dyn ToHtml>>,
+    children: Vec<Box<dyn ToHtml + 'a>>,
 }
-impl Div {
+impl<'a> Div<'a> {
     fn new() -> Self {
         Div {
             class_names: Vec::new(),
             children: Vec::new(),
         }
     }
-    fn with_class(mut self, class: &str) -> Self {
+    fn with_class(mut self, class: &'a str) -> Self {
         self.class_names.push(class.to_string());
         self
     }
-    fn with_child(mut self, child: impl ToHtml + 'static) -> Self {
+    fn with_child(mut self, child: impl ToHtml + 'a) -> Self {
         self.children.push(Box::new(child));
         self
     }
+    fn with_children(mut self, children: impl Iterator<Item = Box<dyn ToHtml + 'a>>) -> Self {
+        for child in children {
+            self.children.push(child);
+        }
+        self
+    }
 }
-impl ToHtml for Div {
+impl<'a> ToHtml for Div<'a> {
     fn to_html(&self) -> String {
         let class_attr = match self.class_names.len() {
             0 => String::new(),
@@ -112,5 +118,20 @@ mod tests {
             .with_class("my-class")
             .with_child(Text::new("Hello, World!"));
         assert_eq!(div.to_html(), "<div class=\"my-class\">Hello, World!</div>");
+    }
+
+    #[test]
+    fn div_with_children_iter_shall_render() {
+        let binding = vec![0, 1, 2];
+        let children = binding
+            .iter()
+            .map(|i| Div::new().with_child(Text::new(&format!("c{}", i))))
+            .map(|d| Box::new(d) as Box<dyn ToHtml>);
+
+        let div = Div::new().with_class("my-class").with_children(children);
+        assert_eq!(
+            div.to_html(),
+            "<div class=\"my-class\"><div>c0</div><div>c1</div><div>c2</div></div>"
+        );
     }
 }
