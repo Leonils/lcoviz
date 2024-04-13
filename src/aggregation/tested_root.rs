@@ -65,6 +65,13 @@ impl TestedRoot {
 
         target_module.add_file(module_path_queue, file);
     }
+
+    pub fn enumerate_code_files(&self) -> impl Iterator<Item = &TestedCodeFile> {
+        self.modules
+            .iter()
+            .flat_map(|m| m.enumerate_code_files())
+            .chain(self.source_files.iter())
+    }
 }
 
 impl TestedContainer for TestedRoot {

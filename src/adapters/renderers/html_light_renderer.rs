@@ -1,5 +1,6 @@
 use crate::{
     core::{Renderer, TestedContainer, TestedFile},
+    file_provider::FileLinesProvider,
     html::{Div, Text, ToHtml},
 };
 
@@ -172,7 +173,7 @@ impl HtmlLightRenderer {
 }
 
 impl Renderer for HtmlLightRenderer {
-    fn render_coverage_summary(&self, root: impl crate::core::TestedContainer) -> String {
+    fn render_coverage_summary(&self, root: &impl crate::core::TestedContainer) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h1("Coverage report"))
@@ -224,8 +225,22 @@ impl Renderer for HtmlLightRenderer {
         );
     }
 
-    fn render_file_coverage_details(&self, file: impl crate::core::TestedFile) -> String {
-        return format!("<html></html>",);
+    fn render_file_coverage_details(
+        &self,
+        file: &impl crate::core::TestedFile,
+        file_provider: impl FileLinesProvider,
+    ) -> String {
+        let lines = file_provider.get_file_lines().unwrap();
+        return format!(
+            "<html>
+    <body>
+        <h1>File: {}</h1>
+        <pre>{}</pre>
+    </body>
+</html>",
+            file.get_name(),
+            lines.join("\n")
+        );
     }
 }
 

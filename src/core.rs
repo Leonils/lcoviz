@@ -1,3 +1,5 @@
+use crate::file_provider::FileLinesProvider;
+
 #[derive(Default, Debug, PartialEq)]
 pub struct AggregatedCoverageCounters {
     pub count: u32,
@@ -40,6 +42,10 @@ pub trait TestedContainer {
 }
 
 pub trait Renderer {
-    fn render_coverage_summary(&self, root: impl TestedContainer) -> String;
-    fn render_file_coverage_details(&self, file: impl TestedFile) -> String;
+    fn render_coverage_summary(&self, root: &impl TestedContainer) -> String;
+    fn render_file_coverage_details(
+        &self,
+        file: &impl TestedFile,
+        file_provider: impl FileLinesProvider,
+    ) -> String;
 }

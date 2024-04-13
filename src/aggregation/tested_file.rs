@@ -38,7 +38,7 @@ impl TestedFile for TestedCodeFile {
     }
 
     fn get_file_path(&self) -> &str {
-        &self.file_name
+        &self.path
     }
 
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
