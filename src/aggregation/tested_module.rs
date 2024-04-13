@@ -57,12 +57,12 @@ impl TestedContainer for TestedModule {
         &self.aggregated
     }
 
-    fn get_container_children(&self) -> &Vec<impl TestedContainer> {
-        &self.modules
+    fn get_container_children(&self) -> impl Iterator<Item = &impl TestedContainer> {
+        self.modules.iter()
     }
 
-    fn get_code_file_children(&self) -> &Vec<impl TestedFile> {
-        &self.source_files
+    fn get_code_file_children(&self) -> impl Iterator<Item = &impl TestedFile> {
+        self.source_files.iter()
     }
 }
 

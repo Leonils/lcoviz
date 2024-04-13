@@ -116,12 +116,10 @@ impl HtmlLightRenderer {
     fn render_module_row(&self, module: &impl TestedContainer) -> Div {
         let submodules = module
             .get_container_children()
-            .iter()
             .map(|module| self.render_module_row(module));
 
         let files = module
             .get_code_file_children()
-            .iter()
             .map(|file| self.render_file_row(file));
 
         Div::new().with_class("module-div").with_child(
@@ -155,12 +153,10 @@ impl HtmlLightRenderer {
 
         let submodules = module
             .get_container_children()
-            .iter()
             .map(|module| self.render_module_row(module));
 
         let files = module
             .get_code_file_children()
-            .iter()
             .map(|file| self.render_file_row(file));
 
         Div::new()
@@ -192,8 +188,7 @@ impl Renderer for HtmlLightRenderer {
             .with_child(
                 Div::new().with_class("module-children").with_children(
                     root.get_code_file_children()
-                        .iter()
-                        .map(|file| self.render_file_row(file)),
+                        .map(|file| self.render_file_row(file)), // Fix: Call render_file_row with the file argument
                 ),
             );
 
@@ -206,7 +201,6 @@ impl Renderer for HtmlLightRenderer {
             )
             .with_children(
                 root.get_container_children()
-                    .iter()
                     .map(|module| self.render_top_module_row(module)),
             )
             .with_child(top_level_code_files);

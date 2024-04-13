@@ -35,8 +35,8 @@ pub trait TestedFile {
 pub trait TestedContainer {
     fn get_name(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
-    fn get_container_children(&self) -> &Vec<impl TestedContainer>;
-    fn get_code_file_children(&self) -> &Vec<impl TestedFile>;
+    fn get_container_children(&self) -> impl Iterator<Item = &impl TestedContainer>;
+    fn get_code_file_children(&self) -> impl Iterator<Item = &impl TestedFile>;
 }
 
 pub trait Renderer {
