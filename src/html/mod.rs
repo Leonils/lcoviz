@@ -39,6 +39,24 @@ impl ToHtml for Text {
     }
 }
 
+pub struct Link {
+    href: String,
+    text: String,
+}
+impl Link {
+    pub fn new(href: &str, text: &str) -> Self {
+        Link {
+            href: href.to_string(),
+            text: text.to_string(),
+        }
+    }
+}
+impl ToHtml for Link {
+    fn to_html(&self) -> String {
+        format!("<a href=\"{}\">{}</a>", self.href, self.text)
+    }
+}
+
 pub struct Div<'a> {
     class_names: Vec<String>,
     children: Vec<Box<dyn ToHtml + 'a>>,
@@ -177,6 +195,15 @@ mod tests {
         assert_eq!(
             div.to_html(),
             "<div class=\"my-class\"><div>c0</div><div>c1</div><div>c2</div></div>"
+        );
+    }
+
+    #[test]
+    fn link_shall_render() {
+        let link = Link::new("https://example.com", "Example");
+        assert_eq!(
+            link.to_html(),
+            "<a href=\"https://example.com\">Example</a>"
         );
     }
 }
