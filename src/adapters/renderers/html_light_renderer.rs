@@ -1,7 +1,9 @@
+use std::{path::PathBuf, str::FromStr};
+
 use crate::{
     core::{Renderer, TestedContainer, TestedFile},
     file_provider::FileLinesProvider,
-    html::{Div, Text, ToHtml},
+    html::{Div, Link, Text, ToHtml},
 };
 
 pub struct HtmlLightRenderer {
@@ -102,13 +104,18 @@ impl HtmlLightRenderer {
     }
 
     fn render_file_row(&self, file: &impl TestedFile) -> Div {
+        let mut file_target = PathBuf::new()
+            .join("details")
+            .join(file.get_path_relative_to_prefix());
+        file_target.set_extension("html");
+
         Div::new().with_child(
             Div::new()
                 .with_class("file-row")
                 .with_child(
                     Div::new()
                         .with_class("item-name")
-                        .with_text(file.get_name()),
+                        .with_child(Link::new(file_target.to_str().unwrap(), file.get_name())),
                 )
                 .with_children(self.render_aggregated_coverage(file.get_aggregated_coverage())),
         )
