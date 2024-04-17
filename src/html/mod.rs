@@ -1,3 +1,5 @@
+use htmlescape::encode_minimal;
+
 pub trait ToHtml {
     fn to_html(&self) -> String;
 }
@@ -31,9 +33,9 @@ impl Text {
 impl ToHtml for Text {
     fn to_html(&self) -> String {
         match self.level {
-            0 => self.content.clone(),
-            1 => format!("<h1>{}</h1>", self.content),
-            2 => format!("<h2>{}</h2>", self.content),
+            0 => encode_minimal(&self.content),
+            1 => format!("<h1>{}</h1>", encode_minimal(&self.content)),
+            2 => format!("<h2>{}</h2>", encode_minimal(&self.content)),
             _ => panic!("Unsupported level: {}", self.level),
         }
     }
@@ -53,7 +55,11 @@ impl Link {
 }
 impl ToHtml for Link {
     fn to_html(&self) -> String {
-        format!("<a href=\"{}\">{}</a>", self.href, self.text)
+        format!(
+            "<a href=\"{}\">{}</a>",
+            self.href,
+            encode_minimal(&self.text)
+        )
     }
 }
 
@@ -204,6 +210,26 @@ mod tests {
         assert_eq!(
             link.to_html(),
             "<a href=\"https://example.com\">Example</a>"
+        );
+    }
+
+    #[test]
+    fn div_with_text_with_brackets_shall_be_escaped() {
+        let div = Div::new()
+            .with_class("my-class")
+            .with_text("<Hello, World!>");
+        assert_eq!(
+            div.to_html(),
+            "<div class=\"my-class\">&lt;Hello, World!&gt;</div>"
+        );
+    }
+
+    #[test]
+    fn link_content_shall_be_escaped() {
+        let link = Link::new("https://<example>.com", "<Example>");
+        assert_eq!(
+            link.to_html(),
+            "<a href=\"https://<example>.com\">&lt;Example&gt;</a>"
         );
     }
 }
