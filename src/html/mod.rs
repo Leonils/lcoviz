@@ -34,8 +34,7 @@ impl ToHtml for Text {
     fn to_html(&self) -> String {
         match self.level {
             0 => encode_minimal(&self.content),
-            1 => format!("<h1>{}</h1>", encode_minimal(&self.content)),
-            2 => format!("<h2>{}</h2>", encode_minimal(&self.content)),
+            i if i > 0 && i < 7 => format!("<h{}>{}</h{}>", i, encode_minimal(&self.content), i),
             _ => panic!("Unsupported level: {}", self.level),
         }
     }
@@ -174,6 +173,25 @@ mod tests {
     fn h2_shall_render() {
         let text = Text::h2("Hello, World!");
         assert_eq!(text.to_html(), "<h2>Hello, World!</h2>");
+    }
+
+    #[test]
+    fn h6_shall_render() {
+        let text = Text {
+            level: 6,
+            content: "Hello, World!".to_string(),
+        };
+        assert_eq!(text.to_html(), "<h6>Hello, World!</h6>");
+    }
+
+    #[test]
+    #[should_panic]
+    fn h7_shall_panic() {
+        let text = Text {
+            level: 7,
+            content: "Hello, World!".to_string(),
+        };
+        text.to_html();
     }
 
     #[test]
