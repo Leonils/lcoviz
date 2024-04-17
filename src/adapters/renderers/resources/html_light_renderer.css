@@ -1,0 +1,179 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #eee;
+}
+h1 {
+  font-weight: 400;
+  font-size: xxx-large;
+  margin: 10px 10px 10px 0;
+}
+h2 {
+  font-weight: 400;
+  font-size: xx-large;
+  margin: 10px 40px 10px 0;
+}
+.responsive-container {
+  max-width: 1200px;
+  margin: 100px auto;
+}
+.module-div {
+  margin-top: 6px;
+}
+.module-children {
+  margin-left: 20px;
+  margin-bottom: 8px;
+}
+.module-row,
+.file-row {
+  display: flex;
+  justify-content: space-between;
+}
+.module-row {
+  font-weight: bold;
+  background-color: #ccc;
+  border-radius: 4px;
+}
+.file-row {
+  font-style: italic;
+  background-color: #fff;
+  margin-top: 2px;
+  border-radius: 4px;
+}
+.item-name {
+  flex-grow: 1;
+  margin: 4px 12px;
+}
+.coverage-stats {
+  margin: 1px;
+  width: 100px;
+  max-width: 100px;
+  min-width: 100px;
+  text-align: center;
+  border-radius: 4px;
+  padding: 2px;
+}
+.header {
+  margin-bottom: 60px;
+}
+.top-module-card {
+  margin-top: 20px;
+  border-radius: 4px;
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.top-module {
+  display: flex;
+  margin: 0 0 30px 20px;
+}
+.top-module > h2,
+.top-module > h1 {
+  flex-grow: 1;
+}
+.coverage-stats-chip {
+  border: solid 2px #555;
+  margin: auto 0 auto 10px;
+  border-radius: 15px;
+  display: flex;
+  position: relative;
+}
+.coverage-stats-chip-left {
+  padding: 4px 10px;
+  border-radius: 15px 0 0 15px;
+  text-align: right;
+  background-color: #fff;
+}
+.coverage-stats-chip-right {
+  padding: 4px 10px;
+  border-radius: 0 15px 15px 0;
+}
+.percentage-0 {
+  background-color: #c10000aa;
+  color: #fff;
+}
+.percentage-1 {
+  background-color: #c12e00aa;
+  color: #fff;
+}
+.percentage-2 {
+  background-color: #cf461baa;
+  color: #fff;
+}
+.percentage-3 {
+  background-color: #eb5f1baa;
+  color: #fff;
+}
+.percentage-4 {
+  background-color: #e77724aa;
+  color: #000;
+}
+.percentage-5 {
+  background-color: #e7ac24aa;
+  color: #000;
+}
+.percentage-6 {
+  background-color: #e7be24aa;
+  color: #000;
+}
+.percentage-7 {
+  background-color: #e3e724aa;
+  color: #000;
+}
+.percentage-8 {
+  background-color: #b6e724aa;
+  color: #000;
+}
+.percentage-9 {
+  background-color: #6ccd24aa;
+  color: #fff;
+}
+.percentage-10 {
+  background-color: #51af22aa;
+  color: #fff;
+}
+.no-coverage {
+  background-color: #ddddddaa;
+  color: #000;
+}
+.percentage-0-chip {
+  border-color: #c10000aa;
+}
+.percentage-1-chip {
+  border-color: #c12e00aa;
+}
+.percentage-2-chip {
+  border-color: #cf461baa;
+}
+.percentage-3-chip {
+  border-color: #eb5f1baa;
+}
+.percentage-4-chip {
+  border-color: #e77724aa;
+}
+.percentage-5-chip {
+  border-color: #e7ac24aa;
+}
+.percentage-6-chip {
+  border-color: #e7be24aa;
+}
+.percentage-7-chip {
+  border-color: #e3e724aa;
+}
+.percentage-8-chip {
+  border-color: #b6e724aa;
+}
+.percentage-9-chip {
+  border-color: #6ccd24aa;
+}
+.percentage-10-chip {
+  border-color: #51af22aa;
+}
+.no-coverage-chip {
+  border-color: #ddddddaa;
+}
+.line-covered {
+  background-color: #b0dfb0;
+}
+.line-not-covered {
+  background-color: #dfb0b0;
+}
