@@ -5,6 +5,7 @@ use crate::core::{AggregatedCoverage, TestedFile};
 use super::with_path::WithPath;
 use lcov::report::section::line::Key as LineKey;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
+use pathdiff::diff_paths;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedCodeFile {
@@ -63,17 +64,8 @@ impl TestedFile for TestedCodeFile {
     }
 
     fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
-        let source_parts = source.components().collect::<Vec<_>>();
-        let binding = PathBuf::from(&self.path);
-        let file_parts = binding.components().collect::<Vec<_>>();
-
-        let relative_parts = file_parts
-            .iter()
-            .skip(source_parts.len())
-            .map(|part| part.as_os_str())
-            .collect::<Vec<_>>();
-
-        PathBuf::from_iter(relative_parts)
+        let diff = diff_paths(&self.path, source).unwrap();
+        diff
     }
 
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
@@ -191,6 +183,16 @@ mod test {
         assert_eq!(
             tested_file.get_path_relative_to(&path),
             PathBuf::from("file.cpp")
+        );
+    }
+
+    #[test]
+    fn when_getting_path_relative_to_brother_it_should_return_the_path() {
+        let tested_file = TestedCodeFile::new("/path/main/file.cpp", "file.cpp");
+        let path = PathBuf::from("/path/other/");
+        assert_eq!(
+            tested_file.get_path_relative_to(&path),
+            PathBuf::from("../main/file.cpp")
         );
     }
 }
