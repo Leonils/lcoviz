@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
 use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
@@ -9,12 +11,14 @@ pub struct TestedRoot {
     modules: Vec<TestedModule>,
     source_files: Vec<TestedCodeFile>,
     aggregated: AggregatedCoverage,
+    prefix: PathBuf,
 }
 
 impl TestedRoot {
     pub fn new(args: AggregatorInput) -> Self {
         let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
+            prefix: PathBuf::from(args.get_prefix()),
             ..Default::default()
         };
 
@@ -75,6 +79,10 @@ impl TestedRoot {
             .flat_map(|m| m.enumerate_code_files())
             .chain(self.source_files.iter())
     }
+
+    pub fn get_prefix(&self) -> &PathBuf {
+        &self.prefix
+    }
 }
 
 impl TestedContainer for TestedRoot {
@@ -102,6 +110,7 @@ impl TestedRoot {
             aggregated: AggregatedCoverage::default(),
             modules: vec![],
             source_files,
+            prefix: PathBuf::from(""),
         }
     }
 
@@ -110,6 +119,7 @@ impl TestedRoot {
             aggregated: AggregatedCoverage::default(),
             modules,
             source_files: vec![],
+            prefix: PathBuf::from(""),
         }
     }
 

@@ -5,6 +5,7 @@ pub mod html;
 pub mod aggregation {
     mod aggregated;
     pub mod input;
+    mod relative;
     mod tested_file;
     mod tested_module;
     pub mod tested_root;
