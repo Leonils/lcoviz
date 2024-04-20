@@ -62,6 +62,20 @@ impl TestedFile for TestedCodeFile {
         &self.path_relative_to_prefix
     }
 
+    fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
+        let source_parts = source.components().collect::<Vec<_>>();
+        let binding = PathBuf::from(&self.path);
+        let file_parts = binding.components().collect::<Vec<_>>();
+
+        let relative_parts = file_parts
+            .iter()
+            .skip(source_parts.len())
+            .map(|part| part.as_os_str())
+            .collect::<Vec<_>>();
+
+        PathBuf::from_iter(relative_parts)
+    }
+
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }
@@ -158,5 +172,25 @@ mod test {
 
         let tested_file = TestedCodeFile::from_section(key, section_value, "");
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
+    }
+
+    #[test]
+    fn when_getting_path_relative_to_root_it_should_return_the_path() {
+        let tested_file = TestedCodeFile::new("/path/file.cpp", "file.cpp");
+        let path = PathBuf::from("/");
+        assert_eq!(
+            tested_file.get_path_relative_to(&path),
+            PathBuf::from("path/file.cpp")
+        );
+    }
+
+    #[test]
+    fn when_getting_path_relative_to_prefix_it_should_return_the_path() {
+        let tested_file = TestedCodeFile::new("/path/file.cpp", "file.cpp");
+        let path = PathBuf::from("/path");
+        assert_eq!(
+            tested_file.get_path_relative_to(&path),
+            PathBuf::from("file.cpp")
+        );
     }
 }
