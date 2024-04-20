@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 
-use crate::core::{AggregatedCoverage, TestedFile};
+use crate::core::{AggregatedCoverage, TestedFile, WithPath};
 
-use super::with_path::WithPath;
 use lcov::report::section::line::Key as LineKey;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
-use pathdiff::diff_paths;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedCodeFile {
@@ -61,11 +59,6 @@ impl TestedFile for TestedCodeFile {
 
     fn get_path_relative_to_prefix(&self) -> &str {
         &self.path_relative_to_prefix
-    }
-
-    fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
-        let diff = diff_paths(&self.path, source).unwrap();
-        diff
     }
 
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {

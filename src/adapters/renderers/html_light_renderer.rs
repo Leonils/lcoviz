@@ -2,7 +2,8 @@ use std::include_str;
 use std::path::PathBuf;
 
 use crate::{
-    core::{Renderer, TestedContainer, TestedFile},
+    aggregation::tested_root::TestedRoot,
+    core::{Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
     html::{Div, Link, Text, ToHtml},
 };
@@ -10,7 +11,7 @@ use crate::{
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 
 pub struct HtmlLightRenderer {
-    // ...
+    pub root: Box<TestedRoot>,
 }
 
 impl HtmlLightRenderer {
@@ -109,7 +110,7 @@ impl HtmlLightRenderer {
     fn render_file_row(&self, file: &impl TestedFile) -> Div {
         let mut file_target = PathBuf::new()
             .join("details")
-            .join(file.get_path_relative_to_prefix());
+            .join(file.get_path_relative_to(&self.root.get_path()));
         file_target.set_extension("html");
 
         Div::new().with_child(
@@ -206,11 +207,13 @@ impl HtmlLightRenderer {
 }
 
 impl Renderer for HtmlLightRenderer {
-    fn render_coverage_summary(&self, root: &impl crate::core::TestedContainer) -> String {
+    fn render_coverage_summary(&self) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h1("Coverage report"))
-            .with_children(self.render_aggregated_coverage_chips(root.get_aggregated_coverage()));
+            .with_children(
+                self.render_aggregated_coverage_chips(self.root.get_aggregated_coverage()),
+            );
 
         let top_level_code_files = Div::new()
             .with_class("top-module-card")
@@ -221,7 +224,8 @@ impl Renderer for HtmlLightRenderer {
             )
             .with_child(
                 Div::new().with_class("module-children").with_children(
-                    root.get_code_file_children()
+                    self.root
+                        .get_code_file_children()
                         .map(|file| self.render_file_row(file)),
                 ),
             );
@@ -234,7 +238,8 @@ impl Renderer for HtmlLightRenderer {
                     .with_child(root_top_module_div),
             )
             .with_children(
-                root.get_container_children()
+                self.root
+                    .get_container_children()
                     .map(|module| self.render_top_module_row(module)),
             )
             .with_child(top_level_code_files);

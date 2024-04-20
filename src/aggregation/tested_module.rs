@@ -1,6 +1,6 @@
-use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
+use crate::core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath};
 
-use super::{tested_file::TestedCodeFile, with_path::WithPath};
+use super::tested_file::TestedCodeFile;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedModule {

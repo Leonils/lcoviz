@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
-use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
+use crate::core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath};
 
 use super::{input::AggregatorInput, tested_file::TestedCodeFile, tested_module::TestedModule};
 
@@ -44,11 +44,10 @@ impl TestedRoot {
     fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue, prefix: &str) {
         let file = TestedCodeFile::from_section(section_key, section_value, prefix);
         let section_path = file
-            .get_path_relative_to_prefix()
-            .to_string()
-            .split('/')
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
+            .get_path_relative_to(&self.prefix)
+            .components()
+            .filter(|c| c.as_os_str() != "/")
+            .map(|c| c.as_os_str().to_str().unwrap().to_string())
             .collect::<Vec<String>>();
 
         if section_path.is_empty() {
@@ -103,6 +102,12 @@ impl TestedContainer for TestedRoot {
     }
 }
 
+impl WithPath for TestedRoot {
+    fn get_path_string(&self) -> String {
+        self.prefix.to_str().unwrap().to_string()
+    }
+}
+
 #[cfg(test)]
 impl TestedRoot {
     pub fn from_source_files(source_files: Vec<TestedCodeFile>) -> Self {
@@ -130,9 +135,11 @@ impl TestedRoot {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use crate::{
-        aggregation::{aggregated::assert_aggregated_counters_eq, with_path::WithPath},
-        core::{TestedContainer, TestedFile},
+        aggregation::aggregated::assert_aggregated_counters_eq,
+        core::{TestedContainer, TestedFile, WithPath},
         test_utils::builders::{
             generate_2_lines_1_covered_section, generate_3_lines_2_covered_section, InsertSection,
         },
@@ -281,9 +288,18 @@ mod test {
         let sub_package = package.get_module_at(0);
         let file = sub_package.get_source_file_at(0);
 
-        assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
-        assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
-        assert_eq!(package.get_path(), vec!["package"]);
+        // assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
+        // assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
+        // assert_eq!(package.get_path(), vec!["package"]);
+
+        assert_eq!(
+            file.get_path(),
+            PathBuf::from("package/sub-package/main.cpp")
+        );
+
+        assert_eq!(sub_package.get_path(), PathBuf::from("package/sub-package"));
+        assert_eq!(package.get_path(), PathBuf::from("package"));
+        assert_eq!(report_tree.get_path(), PathBuf::from(""));
     }
 
     #[test]

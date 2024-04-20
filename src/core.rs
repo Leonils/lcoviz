@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use pathdiff::diff_paths;
+
 use crate::file_provider::FileLinesProvider;
 
 #[derive(Default, Debug, PartialEq)]
@@ -30,16 +32,15 @@ pub struct AggregatedCoverage {
     pub branches: AggregatedCoverageCounters,
 }
 
-pub trait TestedFile {
+pub trait TestedFile: WithPath {
     fn get_name(&self) -> &str;
     fn get_file_path(&self) -> &str;
-    fn get_path_relative_to(&self, prefix: &PathBuf) -> PathBuf;
     fn get_path_relative_to_prefix(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_line_coverage(&self, line: u32) -> Option<u64>;
 }
 
-pub trait TestedContainer {
+pub trait TestedContainer: WithPath {
     fn get_name(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_container_children(&self) -> impl Iterator<Item = &impl TestedContainer>;
@@ -47,10 +48,20 @@ pub trait TestedContainer {
 }
 
 pub trait Renderer {
-    fn render_coverage_summary(&self, root: &impl TestedContainer) -> String;
+    fn render_coverage_summary(&self) -> String;
     fn render_file_coverage_details(
         &self,
         file: &impl TestedFile,
         file_provider: impl FileLinesProvider,
     ) -> String;
+}
+
+pub trait WithPath {
+    fn get_path_string(&self) -> String;
+    fn get_path(&self) -> PathBuf {
+        PathBuf::from(self.get_path_string())
+    }
+    fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
+        diff_paths(self.get_path(), source).unwrap()
+    }
 }
