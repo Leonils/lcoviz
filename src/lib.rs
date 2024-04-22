@@ -27,6 +27,7 @@ pub mod adapters {
 
     pub mod exporters {
         pub mod mpa;
+        pub mod mpa_links;
     }
 }
 

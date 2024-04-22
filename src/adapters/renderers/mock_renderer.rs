@@ -1,5 +1,5 @@
 use crate::{
-    core::{Renderer, TestedContainer, TestedFile, WithPath},
+    core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
 };
 
@@ -9,6 +9,7 @@ impl Renderer for MockRenderer {
         &self,
         _root: &impl WithPath,
         module: &impl TestedContainer,
+        _links_computer: &impl LinksComputer,
     ) -> String {
         format!("Report for module {}", module.get_name())
     }
@@ -18,6 +19,7 @@ impl Renderer for MockRenderer {
         _root: &impl WithPath,
         file: &impl TestedFile,
         _file_provider: &impl FileLinesProvider,
+        _links_computer: &impl LinksComputer,
     ) -> String {
         format!("Report for file {}", file.get_name())
     }

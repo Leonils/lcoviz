@@ -1,4 +1,11 @@
-use std::path::PathBuf;
+use std::{
+    error::Error,
+    io::Write,
+    path::{Path, PathBuf},
+};
+
+#[cfg(test)]
+use mockall::automock;
 
 use pathdiff::diff_paths;
 
@@ -48,12 +55,14 @@ pub trait Renderer {
         &self,
         root: &impl WithPath,
         module: &impl TestedContainer,
+        links_computer: &impl LinksComputer,
     ) -> String;
     fn render_file_coverage_details(
         &self,
         root: &impl WithPath,
         file: &impl TestedFile,
         file_provider: &impl FileLinesProvider,
+        links_computer: &impl LinksComputer,
     ) -> String;
 }
 
@@ -69,5 +78,39 @@ pub trait WithPath {
     }
     fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
         diff_paths(self.get_path(), source).unwrap()
+    }
+}
+
+pub struct LinkPayload {
+    pub link: String,
+    pub text: String,
+}
+pub trait LinksComputer {
+    fn get_links_to_file(
+        &self,
+        root: &impl WithPath,
+        file: &impl WithPath,
+    ) -> impl Iterator<Item = LinkPayload>;
+}
+
+#[cfg_attr(test, automock)]
+pub trait FileSystem {
+    fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>>;
+    fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>>;
+    fn is_dir(&self, path: &Path) -> bool {
+        path.is_dir()
+    }
+}
+pub struct LocalFileSystem;
+impl FileSystem for LocalFileSystem {
+    fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>> {
+        std::fs::create_dir_all(path)?;
+        Ok(())
+    }
+
+    fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>> {
+        let mut f = std::fs::File::create(path)?;
+        f.write_all(content.as_bytes())?;
+        Ok(())
     }
 }

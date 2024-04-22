@@ -1,11 +1,9 @@
 use std::include_str;
 use std::path::PathBuf;
 
-use pathdiff::diff_paths;
-
 use crate::{
     adapters::renderers::common::render_optional_percentage,
-    core::{Renderer, TestedContainer, TestedFile, WithPath},
+    core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
     html::{Div, Img, Link, Text, ToHtml},
 };
@@ -195,54 +193,28 @@ impl HtmlLightRenderer {
         return result;
     }
 
-    fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
-        if root.get_path() == file.get_path() {
+    fn render_navigation(
+        &self,
+        root: &impl WithPath,
+        file: &impl WithPath,
+        links_computer: &impl LinksComputer,
+    ) -> Div {
+        let links: Vec<Link> = links_computer
+            .get_links_to_file(root, file)
+            .map(|link| Link::new(&link.link, &link.text))
+            .collect();
+
+        if links.len() == 0 {
             return Div::new();
         }
 
-        let root_path = root.get_path();
-        let file_path = file.get_path();
-
-        let file_dir_path = match file_path.is_dir() {
-            true => file_path.to_path_buf(),
-            false => file_path.parent().unwrap().to_path_buf(),
-        };
-
-        let mut links: Vec<Link> = Vec::new();
-        let root_link = Link::new(
-            root.get_path_relative_to(&file_dir_path)
-                .join("index.html")
-                .to_str()
-                .unwrap(),
-            root.get_name(),
-        );
-
-        for ancestor in file_path.ancestors().skip(1) {
-            if ancestor == root_path {
-                break;
-            }
-
-            let target = diff_paths(ancestor, &file_dir_path)
-                .unwrap()
-                .join("index.html");
-            let link = Link::new(
-                target.to_str().unwrap(),
-                ancestor.file_name().unwrap_or_default().to_str().unwrap(),
-            );
-
-            links.push(link);
-        }
-
-        links.push(root_link);
-        links.reverse();
-
-        let mut d = Div::new().with_class("navigation");
+        let mut nav_bar = Div::new().with_class("navigation");
         for link in links {
-            d = d
+            nav_bar = nav_bar
                 .with_child(Div::new().with_class("navigation-part").with_child(link))
                 .with_child(Div::new().with_text(" / "))
         }
-        d.with_child(
+        nav_bar.with_child(
             Div::new()
                 .with_class("navigation-part")
                 .with_text(file.get_name()),
@@ -255,6 +227,7 @@ impl Renderer for HtmlLightRenderer {
         &self,
         root: &impl WithPath,
         module: &impl TestedContainer,
+        links_computer: &impl LinksComputer,
     ) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
@@ -282,7 +255,7 @@ impl Renderer for HtmlLightRenderer {
                     .with_class("top-module-card")
                     .with_class("header")
                     .with_child(root_top_module_div)
-                    .with_child(self.render_navigation(root, module)),
+                    .with_child(self.render_navigation(root, module, links_computer)),
             )
             .with_children(
                 module
@@ -315,6 +288,7 @@ impl Renderer for HtmlLightRenderer {
         root: &impl WithPath,
         file: &impl crate::core::TestedFile,
         file_provider: &impl FileLinesProvider,
+        links_computer: &impl LinksComputer,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
         return format!(
@@ -346,7 +320,7 @@ impl Renderer for HtmlLightRenderer {
             self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
                 .map(|chip| chip.to_html())
                 .collect::<String>(),
-            self.render_navigation(root, file).to_html(),
+            self.render_navigation(root, file, links_computer).to_html(),
             self.render_lines(file, lines)
         );
     }

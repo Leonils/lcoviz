@@ -1,9 +1,9 @@
 use lcov::Report;
-use lcov_aggregator_report::adapters::exporters::mpa::{LocalFileSystem, MpaExporter};
+use lcov_aggregator_report::adapters::exporters::mpa::MpaExporter;
 use lcov_aggregator_report::adapters::renderers::html_light_renderer::HtmlLightRenderer;
 use lcov_aggregator_report::aggregation::input::AggregatorInput;
 use lcov_aggregator_report::aggregation::tested_root::TestedRoot;
-use lcov_aggregator_report::core::Exporter;
+use lcov_aggregator_report::core::{Exporter, LocalFileSystem};
 use std::env::args;
 use std::error::Error;
 use std::path::PathBuf;
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let renderer = HtmlLightRenderer;
 
     let file_system = LocalFileSystem;
-    let exporter = MpaExporter::new(renderer, tested_root, output_path, file_system);
+    let exporter = MpaExporter::new(renderer, tested_root, output_path, &file_system);
     exporter.render_root();
 
     Ok(())

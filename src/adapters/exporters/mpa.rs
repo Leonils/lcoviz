@@ -1,56 +1,34 @@
-#[cfg(test)]
-use mockall::automock;
-
-use std::{
-    error::Error,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{error::Error, path::PathBuf};
 
 use crate::{
     aggregation::tested_root::TestedRoot,
-    core::{Exporter, Renderer, TestedContainer, TestedFile, WithPath},
+    core::{Exporter, FileSystem, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::LocalFileLinesProvider,
 };
 
-#[cfg_attr(test, automock)]
-pub trait FileSystem {
-    fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>>;
-    fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>>;
-}
+use super::mpa_links::MpaLinksComputer;
 
-pub struct LocalFileSystem;
-impl FileSystem for LocalFileSystem {
-    fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>> {
-        std::fs::create_dir_all(path)?;
-        Ok(())
-    }
-
-    fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>> {
-        let mut f = std::fs::File::create(path)?;
-        f.write_all(content.as_bytes())?;
-        Ok(())
-    }
-}
-
-pub struct MpaExporter<TRenderer: Renderer, TFileSystem: FileSystem> {
+pub struct MpaExporter<'a, TRenderer: Renderer, TFileSystem: FileSystem> {
     renderer: TRenderer,
     root: TestedRoot,
     output_path_root: PathBuf,
-    file_system: TFileSystem,
+    file_system: &'a TFileSystem,
+    links_computer: MpaLinksComputer<'a, TFileSystem>,
 }
-impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<TRenderer, TFileSystem> {
+impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer, TFileSystem> {
     pub fn new(
         renderer: TRenderer,
         root: TestedRoot,
         output_path_root: PathBuf,
-        file_system: TFileSystem,
+        file_system: &'a TFileSystem,
     ) -> Self {
+        let links_computer = MpaLinksComputer::new(file_system);
         MpaExporter {
             renderer,
             root,
             output_path_root,
             file_system,
+            links_computer,
         }
     }
 
@@ -72,9 +50,12 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<TRenderer, TF
 
         self.file_system.write_all(
             &target_path,
-            &self
-                .renderer
-                .render_file_coverage_details(root, file, &lines_provider),
+            &self.renderer.render_file_coverage_details(
+                root,
+                file,
+                &lines_provider,
+                &self.links_computer,
+            ),
         )?;
 
         Ok(())
@@ -92,7 +73,9 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<TRenderer, TF
 
         self.file_system.write_all(
             &output_path.join("index.html"),
-            &self.renderer.render_module_coverage_details(root, module),
+            &self
+                .renderer
+                .render_module_coverage_details(root, module, &self.links_computer),
         )?;
 
         for child in module.get_container_children() {
@@ -107,8 +90,8 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<TRenderer, TF
     }
 }
 
-impl<TRenderer: Renderer, TFileSystem: FileSystem> Exporter
-    for MpaExporter<TRenderer, TFileSystem>
+impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> Exporter
+    for MpaExporter<'a, TRenderer, TFileSystem>
 {
     fn render_root(self) -> () {
         self.render_module(&self.root, &self.root).unwrap();
@@ -119,11 +102,12 @@ impl<TRenderer: Renderer, TFileSystem: FileSystem> Exporter
 mod test {
 
     use crate::{
-        adapters::renderers::mock_renderer::MockRenderer, aggregation::fixtures::AggregatedFixtures,
+        adapters::renderers::mock_renderer::MockRenderer,
+        aggregation::fixtures::AggregatedFixtures, core::MockFileSystem,
     };
 
     use super::*;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     macro_rules! expect_create_dir_all {
         ($mock_filesystem:ident, $times:expr, $path:expr) => {
@@ -154,7 +138,7 @@ mod test {
         expect_create_dir_all!(fs, 1, "target");
         expect_write_all!(fs, "target/index.html", "Report for module Test report");
 
-        let exporter = MpaExporter::new(MockRenderer, empty_report, output_path, fs);
+        let exporter = MpaExporter::new(MockRenderer, empty_report, output_path, &fs);
         exporter.render_root();
     }
 
@@ -168,7 +152,7 @@ mod test {
         expect_write_all!(fs, "target/index.html", "Report for module Test report");
         expect_write_all!(fs, "target/main.cpp.html", "Report for file main.cpp");
 
-        let exporter = MpaExporter::new(MockRenderer, report, output_path, fs);
+        let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
         exporter.render_root();
     }
 
@@ -189,7 +173,7 @@ mod test {
             "Report for file nested.cpp"
         );
 
-        let exporter = MpaExporter::new(MockRenderer, report, output_path, fs);
+        let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
         exporter.render_root();
     }
 }
