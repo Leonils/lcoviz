@@ -11,7 +11,7 @@ impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
     }
 }
 impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSystem> {
-    fn get_links_to_file(
+    fn get_links_from_file(
         &self,
         root: &impl WithPath,
         file: &impl WithPath,
@@ -105,7 +105,9 @@ mod test {
         fs.expect_is_dir().times(1).return_const(false);
         let computer = super::MpaLinksComputer { file_system: &fs };
 
-        let links = computer.get_links_to_file(&root, &file).collect::<Vec<_>>();
+        let links = computer
+            .get_links_from_file(&root, &file)
+            .collect::<Vec<_>>();
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].link, "../index.html");
         assert_eq!(links[0].text, "root");
@@ -122,7 +124,9 @@ mod test {
         fs.expect_is_dir().times(1).return_const(true);
         let computer = super::MpaLinksComputer { file_system: &fs };
 
-        let links = computer.get_links_to_file(&root, &file).collect::<Vec<_>>();
+        let links = computer
+            .get_links_from_file(&root, &file)
+            .collect::<Vec<_>>();
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].link, "../index.html");
         assert_eq!(links[0].text, "root");
@@ -136,7 +140,9 @@ mod test {
         fs.expect_is_dir().times(1).return_const(true);
         let computer = super::MpaLinksComputer { file_system: &fs };
 
-        let links = computer.get_links_to_file(&root, &file).collect::<Vec<_>>();
+        let links = computer
+            .get_links_from_file(&root, &file)
+            .collect::<Vec<_>>();
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].link, "../../index.html");
         assert_eq!(links[0].text, "root");
@@ -151,7 +157,9 @@ mod test {
         let fs = MockFileSystem::new();
         let computer = super::MpaLinksComputer { file_system: &fs };
 
-        let links = computer.get_links_to_file(&root, &file).collect::<Vec<_>>();
+        let links = computer
+            .get_links_from_file(&root, &file)
+            .collect::<Vec<_>>();
         assert_eq!(links.len(), 0);
     }
 }

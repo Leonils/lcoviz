@@ -200,7 +200,7 @@ impl HtmlLightRenderer {
         links_computer: &impl LinksComputer,
     ) -> Div {
         let links: Vec<Link> = links_computer
-            .get_links_to_file(root, file)
+            .get_links_from_file(root, file)
             .map(|link| Link::new(&link.link, &link.text))
             .collect();
 

@@ -86,7 +86,7 @@ pub struct LinkPayload {
     pub text: String,
 }
 pub trait LinksComputer {
-    fn get_links_to_file(
+    fn get_links_from_file(
         &self,
         root: &impl WithPath,
         file: &impl WithPath,
