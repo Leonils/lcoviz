@@ -91,6 +91,7 @@ pub trait LinksComputer {
         root: &impl WithPath,
         file: &impl WithPath,
     ) -> impl Iterator<Item = LinkPayload>;
+    fn get_link_to(&self, root: &impl WithPath, file: &impl WithPath) -> LinkPayload;
 }
 
 #[cfg_attr(test, automock)]
