@@ -251,62 +251,6 @@ impl HtmlLightRenderer {
 }
 
 impl Renderer for HtmlLightRenderer {
-    fn render_coverage_summary(&self) -> String {
-        let root_top_module_div = Div::new()
-            .with_class("top-module")
-            .with_child(Text::h1("Coverage report"))
-            .with_children(
-                self.render_aggregated_coverage_chips(self.root.get_aggregated_coverage()),
-            );
-
-        let top_level_code_files = Div::new()
-            .with_class("top-module-card")
-            .with_child(
-                Div::new()
-                    .with_class("top-module")
-                    .with_child(Text::h2("Top level code files")),
-            )
-            .with_child(
-                Div::new().with_class("module-children").with_children(
-                    self.root
-                        .get_code_file_children()
-                        .map(|file| self.render_file_row(&*self.root, file)),
-                ),
-            );
-
-        let main = Div::new()
-            .with_child(
-                Div::new()
-                    .with_class("top-module-card")
-                    .with_class("header")
-                    .with_child(root_top_module_div),
-            )
-            .with_children(
-                self.root
-                    .get_container_children()
-                    .map(|module| self.render_top_module_row(&*self.root, module)),
-            )
-            .with_child(top_level_code_files);
-
-        return format!(
-            "<html>
-    <head>
-        <title>Coverage report</title>
-        <style type=\"text/css\">
-            {}
-        </style>
-    </head>
-    <body>
-        <main class=\"responsive-container\">
-            {}
-        </main>
-    </body>
-</html>",
-            DEFAULT_CSS,
-            main.to_html()
-        );
-    }
-
     fn render_module_coverage_details(&self, module: &impl TestedContainer) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")

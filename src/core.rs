@@ -46,7 +46,6 @@ pub trait TestedContainer: WithPath {
 }
 
 pub trait Renderer {
-    fn render_coverage_summary(&self) -> String;
     fn render_module_coverage_details(&self, module: &impl TestedContainer) -> String;
     fn render_file_coverage_details(
         &self,
