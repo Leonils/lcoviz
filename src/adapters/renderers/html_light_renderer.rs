@@ -1,5 +1,4 @@
 use std::include_str;
-use std::path::PathBuf;
 
 use crate::{
     adapters::renderers::common::render_optional_percentage,
@@ -96,11 +95,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     }
 
     fn render_file_row(&self, root: &impl WithPath, file: &impl TestedFile) -> Div {
-        let file_path = file.get_path();
-        let file_extension = file_path.extension().unwrap_or_default();
-        let file_target = PathBuf::new()
-            .join(file.get_path_relative_to(&root.get_path()))
-            .with_extension(format!("{}.html", file_extension.to_string_lossy()));
+        let link = self.links_computer.get_link_to(root, file);
 
         Div::new().with_child(
             Div::new()
@@ -113,7 +108,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .with_child(
                     Div::new()
                         .with_class("item-name")
-                        .with_child(Link::new(file_target.to_str().unwrap(), file.get_name())),
+                        .with_child(Link::from_link_payload(link))
                 )
                 .with_children(self.render_aggregated_coverage(file.get_aggregated_coverage())),
         )

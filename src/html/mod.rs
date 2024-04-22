@@ -1,5 +1,7 @@
 use htmlescape::encode_minimal;
 
+use crate::core::LinkPayload;
+
 pub trait ToHtml {
     fn to_html(&self) -> String;
 }
@@ -50,6 +52,9 @@ impl Link {
             href: href.to_string(),
             text: text.to_string(),
         }
+    }
+    pub fn from_link_payload(LinkPayload { link, text }: LinkPayload) -> Self {
+        Link { href: link, text }
     }
 }
 impl ToHtml for Link {
