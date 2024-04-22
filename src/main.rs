@@ -36,7 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut target_path = output_path
             .join("details")
             .join(file.get_path_relative_to(&renderer.root.get_path()));
-        target_path.set_extension("html");
+
+        let extension = target_path.extension().unwrap_or_default();
+        target_path.set_extension(format!("{}.html", extension.to_string_lossy()));
 
         std::fs::create_dir_all(target_path.parent().unwrap())?;
 

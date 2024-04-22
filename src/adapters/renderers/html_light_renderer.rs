@@ -110,10 +110,12 @@ impl HtmlLightRenderer {
     }
 
     fn render_file_row(&self, file: &impl TestedFile) -> Div {
-        let mut file_target = PathBuf::new()
+        let file_path = file.get_path();
+        let file_extension = file_path.extension().unwrap_or_default();
+        let file_target = PathBuf::new()
             .join("details")
-            .join(file.get_path_relative_to(&self.root.get_path()));
-        file_target.set_extension("html");
+            .join(file.get_path_relative_to(&self.root.get_path()))
+            .with_extension(format!("{}.html", file_extension.to_string_lossy()));
 
         Div::new().with_child(
             Div::new()
