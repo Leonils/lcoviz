@@ -150,6 +150,67 @@ impl<'a> ToHtml for Div<'a> {
     }
 }
 
+pub struct Row<'a> {
+    class_names: Vec<String>,
+    cells: Vec<Box<dyn ToHtml + 'a>>,
+}
+impl<'a> Row<'a> {
+    pub fn new() -> Self {
+        Row {
+            class_names: Vec::new(),
+            cells: Vec::new(),
+        }
+    }
+    pub fn with_class(mut self, class: &str) -> Self {
+        self.class_names.push(class.to_string());
+        self
+    }
+    pub fn with_cell(mut self, cell: impl ToHtml + 'a) -> Self {
+        self.cells.push(Box::new(cell));
+        self
+    }
+}
+pub struct Table<'a> {
+    rows: Vec<Row<'a>>,
+}
+impl<'a> Table<'a> {
+    pub fn new() -> Self {
+        Table { rows: Vec::new() }
+    }
+    pub fn with_row(mut self, row: Row<'a>) -> Self {
+        self.rows.push(row);
+        self
+    }
+    pub fn with_rows(mut self, rows: impl Iterator<Item = Row<'a>>) -> Self {
+        for row in rows {
+            self.rows.push(row);
+        }
+        self
+    }
+}
+impl<'a> ToHtml for Row<'a> {
+    fn to_html(&self) -> String {
+        let class_attr = match self.class_names.len() {
+            0 => String::new(),
+            _ => format!(" class=\"{}\"", self.class_names.join(" ")),
+        };
+        let cells_html: String = self
+            .cells
+            .iter()
+            .map(|c| format!("<td>{}</td>", c.to_html()))
+            .collect();
+
+        format!("<tr{}>{}</tr>", class_attr, cells_html)
+    }
+}
+impl<'a> ToHtml for Table<'a> {
+    fn to_html(&self) -> String {
+        let rows_html: String = self.rows.iter().map(|r| r.to_html()).collect();
+
+        format!("<table>{}</table>", rows_html)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -327,5 +388,48 @@ mod tests {
     fn pre_shall_render() {
         let pre = Pre::new("Hello, World!");
         assert_eq!(pre.to_html(), "<pre>Hello, World!</pre>");
+    }
+
+    #[test]
+    fn empty_table_shall_render() {
+        let table = Table::new();
+        assert_eq!(table.to_html(), "<table></table>");
+    }
+
+    #[test]
+    fn table_with_2_rows_shall_render() {
+        let table = Table::new()
+            .with_row(
+                Row::new()
+                    .with_cell(Text::new("r1c1"))
+                    .with_cell(Text::new("r1c2")),
+            )
+            .with_row(
+                Row::new()
+                    .with_cell(Text::new("r2c1"))
+                    .with_cell(Text::new("r2c2")),
+            );
+        assert_eq!(
+            table.to_html(),
+            "<table><tr><td>r1c1</td><td>r1c2</td></tr><tr><td>r2c1</td><td>r2c2</td></tr></table>"
+        );
+    }
+
+    #[test]
+    fn table_built_from_row_iterator_shall_render() {
+        let rows = vec![
+            Row::new()
+                .with_cell(Text::new("r1c1"))
+                .with_cell(Text::new("r1c2")),
+            Row::new()
+                .with_cell(Text::new("r2c1"))
+                .with_cell(Text::new("r2c2")),
+        ];
+
+        let table = Table::new().with_rows(rows.into_iter());
+        assert_eq!(
+            table.to_html(),
+            "<table><tr><td>r1c1</td><td>r1c2</td></tr><tr><td>r2c1</td><td>r2c2</td></tr></table>"
+        );
     }
 }

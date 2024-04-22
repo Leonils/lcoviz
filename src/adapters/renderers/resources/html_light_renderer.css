@@ -171,16 +171,39 @@ h2 {
 .chip-none {
   border-color: #ddddddaa;
 }
+.lines > table {
+  width: 100%;
+}
+.lines > table > tbody > tr > td:nth-child(1) {
+  text-align: right;
+  font-size: small;
+  min-width: 25px;
+  color: #555;
+}
+.lines > table > tbody > tr > td:nth-child(2) {
+  text-align: center;
+  font-size: small;
+  min-width: 25px;
+}
 .line-covered > pre,
 .line-not-covered > pre,
 .line-not-tested > pre {
   margin: 0;
 }
-.line-covered {
-  background-color: #b0dfb0;
+.line-covered > td:nth-child(2) {
+  color: #66aa66;
 }
-.line-not-covered {
-  background-color: #dfb0b0;
+.line-covered > td:nth-child(3) {
+  background-color: #b6efb6;
+}
+.line-not-covered > td:nth-child(2) {
+  color: #cc5a5a;
+}
+.line-not-covered > td:nth-child(3) {
+  background-color: #ffb7b7;
+}
+.line-not-tested > td:nth-child(3) {
+  color: #999;
 }
 .file-logo {
   display: flex;

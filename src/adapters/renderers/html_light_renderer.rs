@@ -4,7 +4,7 @@ use crate::{
     adapters::renderers::common::render_optional_percentage,
     core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::{Div, Img, Link, Pre, Text, ToHtml},
+    html::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
 };
 
 use super::common::get_percentage_class;
@@ -171,7 +171,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_line(line_number: u32, file: &impl crate::core::TestedFile, line: String) -> Div {
+    fn render_line(line_number: u32, file: &impl crate::core::TestedFile, line: String) -> Row {
         let coverage = file.get_line_coverage(line_number as u32);
 
         let class = match coverage {
@@ -180,24 +180,22 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             None => "line-not-tested",
         };
 
-        let line = match coverage {
-            Some(cov) => format!("{:4} | {:4} | {}", line_number, cov, line),
-            None => format!("{:4} |      | {}", line_number, line),
-        };
-
-        Div::new().with_class(class).with_child(Pre::new(&line))
+        Row::new()
+            .with_class(class)
+            .with_cell(Text::new(&line_number.to_string()))
+            .with_cell(Text::new(
+                &coverage.map(|c| c.to_string()).unwrap_or_default(),
+            ))
+            .with_cell(Pre::new(&line))
     }
 
-    fn render_lines(
-        file: &impl crate::core::TestedFile,
-        lines: Vec<String>,
-    ) -> impl Iterator<Item = Div> {
-        lines
+    fn render_lines(file: &impl crate::core::TestedFile, lines: Vec<String>) -> Table {
+        let rows = lines
             .iter()
             .enumerate()
-            .map(|(i, line)| Self::render_line(i as u32 + 1, file, line.clone()))
-            .collect::<Vec<Div>>()
-            .into_iter()
+            .map(|(i, line)| Self::render_line(i as u32 + 1, file, line.clone()));
+
+        Table::new().with_rows(rows)
     }
 
     fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
@@ -317,7 +315,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         .with_child(
                             Div::new()
                                 .with_class("lines")
-                                .with_children(Self::render_lines(file, lines)),
+                                .with_child(Self::render_lines(file, lines)),
                         ),
                 );
 
