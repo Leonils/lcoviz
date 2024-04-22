@@ -35,8 +35,8 @@ impl TestedRoot {
             .find(|m| m.get_name() == module_name)
     }
 
-    fn insert_new_module(&mut self, module_name: &str) -> &mut TestedModule {
-        let module = TestedModule::new(module_name.to_string(), module_name.to_string());
+    fn insert_new_module(&mut self, module_path: &str, module_name: &str) -> &mut TestedModule {
+        let module = TestedModule::new(module_path.to_string(), module_name.to_string());
         self.modules.push(module);
         self.modules.last_mut().unwrap()
     }
@@ -66,7 +66,10 @@ impl TestedRoot {
 
         let target_module = match self.find_module_by_name(&module_name) {
             Some(existing_module) => existing_module,
-            None => self.insert_new_module(&module_name),
+            None => self.insert_new_module(
+                format!("{}/{}", self.prefix.to_str().unwrap(), module_name).as_str(),
+                module_name.as_str(),
+            ),
         };
 
         target_module.add_file(module_path_queue, file);

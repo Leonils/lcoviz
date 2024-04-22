@@ -109,12 +109,11 @@ impl HtmlLightRenderer {
         .flatten()
     }
 
-    fn render_file_row(&self, file: &impl TestedFile) -> Div {
+    fn render_file_row(&self, root: &impl WithPath, file: &impl TestedFile) -> Div {
         let file_path = file.get_path();
         let file_extension = file_path.extension().unwrap_or_default();
         let file_target = PathBuf::new()
-            .join("details")
-            .join(file.get_path_relative_to(&self.root.get_path()))
+            .join(file.get_path_relative_to(&root.get_path()))
             .with_extension(format!("{}.html", file_extension.to_string_lossy()));
 
         Div::new().with_child(
@@ -129,14 +128,14 @@ impl HtmlLightRenderer {
         )
     }
 
-    fn render_module_row(&self, module: &impl TestedContainer) -> Div {
+    fn render_module_row(&self, root: &impl WithPath, module: &impl TestedContainer) -> Div {
         let submodules = module
             .get_container_children()
-            .map(|module| self.render_module_row(module));
+            .map(|module| self.render_module_row(root, module));
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(file));
+            .map(|file| self.render_file_row(root, file));
 
         Div::new().with_class("module-div").with_child(
             Div::new()
@@ -161,7 +160,7 @@ impl HtmlLightRenderer {
         )
     }
 
-    fn render_top_module_row(&self, module: &impl TestedContainer) -> Div {
+    fn render_top_module_row(&self, root: &impl WithPath, module: &impl TestedContainer) -> Div {
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h2(module.get_name()))
@@ -169,11 +168,11 @@ impl HtmlLightRenderer {
 
         let submodules = module
             .get_container_children()
-            .map(|module| self.render_module_row(module));
+            .map(|module| self.render_module_row(root, module));
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(file));
+            .map(|file| self.render_file_row(root, file));
 
         Div::new()
             .with_class("top-module-card")
@@ -212,23 +211,26 @@ impl HtmlLightRenderer {
     fn render_navigation(&self, file: &impl TestedFile) -> Div {
         let root_path = self.root.get_path();
         let file_path = file.get_path();
+        let file_dir_path = file_path.parent().unwrap().to_path_buf();
 
         let mut links: Vec<Link> = Vec::new();
         let root_link = Link::new(
             self.root
-                .get_path_relative_to(&file_path)
+                .get_path_relative_to(&file_dir_path)
                 .join("index.html")
                 .to_str()
                 .unwrap(),
             self.root.get_name(),
         );
 
-        for ancestor in file_path.ancestors().skip(1) {
+        for ancestor in file_dir_path.ancestors() {
             if ancestor == root_path {
                 break;
             }
 
-            let target = diff_paths(ancestor, &file_path).unwrap().join("index.html");
+            let target = diff_paths(ancestor, &file_dir_path)
+                .unwrap()
+                .join("index.html");
             let link = Link::new(
                 target.to_str().unwrap(),
                 ancestor.file_name().unwrap().to_str().unwrap(),
@@ -244,12 +246,7 @@ impl HtmlLightRenderer {
         for link in links {
             d = d.with_child(link).with_text(" / ")
         }
-        d = d.with_text(file.get_name());
-
-        // Div::new()
-        //     .with_class("navigation")
-        //     .with_children(links.into_iter())
-        d
+        d.with_text(file.get_name())
     }
 }
 
@@ -273,7 +270,7 @@ impl Renderer for HtmlLightRenderer {
                 Div::new().with_class("module-children").with_children(
                     self.root
                         .get_code_file_children()
-                        .map(|file| self.render_file_row(file)),
+                        .map(|file| self.render_file_row(&*self.root, file)),
                 ),
             );
 
@@ -287,7 +284,61 @@ impl Renderer for HtmlLightRenderer {
             .with_children(
                 self.root
                     .get_container_children()
-                    .map(|module| self.render_top_module_row(module)),
+                    .map(|module| self.render_top_module_row(&*self.root, module)),
+            )
+            .with_child(top_level_code_files);
+
+        return format!(
+            "<html>
+    <head>
+        <title>Coverage report</title>
+        <style type=\"text/css\">
+            {}
+        </style>
+    </head>
+    <body>
+        <main class=\"responsive-container\">
+            {}
+        </main>
+    </body>
+</html>",
+            DEFAULT_CSS,
+            main.to_html()
+        );
+    }
+
+    fn render_module_coverage_details(&self, module: &impl TestedContainer) -> String {
+        let root_top_module_div = Div::new()
+            .with_class("top-module")
+            .with_child(Text::h1(module.get_name()))
+            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()));
+
+        let top_level_code_files = Div::new()
+            .with_class("top-module-card")
+            .with_child(
+                Div::new()
+                    .with_class("top-module")
+                    .with_child(Text::h2("Top level code files")),
+            )
+            .with_child(
+                Div::new().with_class("module-children").with_children(
+                    module
+                        .get_code_file_children()
+                        .map(|file| self.render_file_row(module, file)),
+                ),
+            );
+
+        let main = Div::new()
+            .with_child(
+                Div::new()
+                    .with_class("top-module-card")
+                    .with_class("header")
+                    .with_child(root_top_module_div),
+            )
+            .with_children(
+                module
+                    .get_container_children()
+                    .map(|submodule| self.render_top_module_row(module, submodule)),
             )
             .with_child(top_level_code_files);
 
