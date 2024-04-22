@@ -62,6 +62,10 @@ pub trait Renderer {
         file: &impl TestedFile,
         file_provider: &impl FileLinesProvider,
     ) -> String;
+    fn get_required_resources(
+        &self,
+        root: &impl TestedContainer,
+    ) -> impl Iterator<Item = (&str, &str)>;
 }
 
 pub trait Exporter {
@@ -90,6 +94,12 @@ pub trait LinksComputer {
         file: &impl WithPath,
     ) -> impl Iterator<Item = LinkPayload>;
     fn get_link_to(&self, root: &impl WithPath, file: &impl WithPath) -> LinkPayload;
+    fn get_link_to_resource(
+        &self,
+        root: &impl WithPath,
+        current: &impl WithPath,
+        resource_name: &str,
+    ) -> String;
 }
 
 #[cfg_attr(test, automock)]

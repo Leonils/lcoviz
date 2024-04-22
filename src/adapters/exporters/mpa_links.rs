@@ -27,6 +27,15 @@ impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
         file.get_path_relative_to(&root.get_path())
             .join("index.html")
     }
+
+    fn get_path_to_root(&self, root: &impl WithPath, file: &impl WithPath) -> PathBuf {
+        match self.file_system.is_dir(&file.get_path()) {
+            true => root.get_path_relative_to(&file.get_path()),
+            false => {
+                diff_paths(&root.get_path(), &file.get_path().parent().unwrap()).unwrap_or_default()
+            }
+        }
+    }
 }
 impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSystem> {
     fn get_links_from_file(
@@ -93,6 +102,19 @@ impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSy
             link: target.to_str().unwrap().to_string(),
             text: file.get_name().to_string(),
         }
+    }
+
+    fn get_link_to_resource(
+        &self,
+        root: &impl WithPath,
+        current: &impl WithPath,
+        resource_name: &str,
+    ) -> String {
+        let target = &self
+            .get_path_to_root(root, current)
+            .join("_resources")
+            .join(resource_name);
+        target.to_str().unwrap().to_string()
     }
 }
 
@@ -217,5 +239,41 @@ mod test {
         let link = computer.get_link_to(&root, &file);
         assert_eq!(link.link, "dir/module/index.html");
         assert_eq!(link.text, "module");
+    }
+
+    #[test]
+    fn when_getting_resource_from_root_it_shall_get_a_relative_down_path() {
+        let root = MockWithPath::new("root", "/root");
+        let current = MockWithPath::new("root", "/root");
+        let mut fs = MockFileSystem::new();
+        fs.expect_is_dir().times(1).return_const(true);
+        let computer = super::MpaLinksComputer { file_system: &fs };
+
+        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        assert_eq!(link, "_resources/resource.svg");
+    }
+
+    #[test]
+    fn when_getting_resource_from_module_it_shall_get_a_relative_down_path() {
+        let root = MockWithPath::new("root", "/root");
+        let current = MockWithPath::new("module", "/root/module");
+        let mut fs = MockFileSystem::new();
+        fs.expect_is_dir().times(1).return_const(true);
+        let computer = super::MpaLinksComputer { file_system: &fs };
+
+        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        assert_eq!(link, "../_resources/resource.svg");
+    }
+
+    #[test]
+    fn when_getting_resource_from_file_it_shall_get_a_relative_down_path() {
+        let root = MockWithPath::new("root", "/root");
+        let current = MockWithPath::new("file.rs", "/root/module/file.rs");
+        let mut fs = MockFileSystem::new();
+        fs.expect_is_dir().times(1).return_const(false);
+        let computer = super::MpaLinksComputer { file_system: &fs };
+
+        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        assert_eq!(link, "../_resources/resource.svg");
     }
 }

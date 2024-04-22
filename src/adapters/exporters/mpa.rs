@@ -85,6 +85,17 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> Exporter
 {
     fn render_root(self) -> () {
         self.render_module(&self.root, &self.root).unwrap();
+
+        let required_resources = self.renderer.get_required_resources(&self.root);
+        self.file_system
+            .create_dir_all(&self.output_path_root.join("_resources"))
+            .unwrap();
+        for (resource_name, resource_content) in required_resources {
+            let target_path = self.output_path_root.join("_resources").join(resource_name);
+            self.file_system
+                .write_all(&target_path, resource_content)
+                .unwrap();
+        }
     }
 }
 
@@ -126,7 +137,9 @@ mod test {
 
         let mut fs = MockFileSystem::new();
         expect_create_dir_all!(fs, 1, "target");
+        expect_create_dir_all!(fs, 1, "target/_resources");
         expect_write_all!(fs, "target/index.html", "Report for module Test report");
+        expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
         let exporter = MpaExporter::new(MockRenderer, empty_report, output_path, &fs);
         exporter.render_root();
@@ -139,8 +152,10 @@ mod test {
 
         let mut fs = MockFileSystem::new();
         expect_create_dir_all!(fs, 2, "target");
+        expect_create_dir_all!(fs, 1, "target/_resources");
         expect_write_all!(fs, "target/index.html", "Report for module Test report");
         expect_write_all!(fs, "target/main.cpp.html", "Report for file main.cpp");
+        expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
         let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
         exporter.render_root();
@@ -154,6 +169,7 @@ mod test {
         let mut fs = MockFileSystem::new();
         expect_create_dir_all!(fs, 2, "target");
         expect_create_dir_all!(fs, 2, "target/module");
+        expect_create_dir_all!(fs, 1, "target/_resources");
         expect_write_all!(fs, "target/index.html", "Report for module Test report");
         expect_write_all!(fs, "target/module/index.html", "Report for module module");
         expect_write_all!(fs, "target/main.cpp.html", "Report for file main.cpp");
@@ -162,6 +178,7 @@ mod test {
             "target/module/nested.cpp.html",
             "Report for file nested.cpp"
         );
+        expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
         let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
         exporter.render_root();

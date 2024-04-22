@@ -94,8 +94,18 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         .flatten()
     }
 
-    fn render_file_row(&self, root: &impl WithPath, file: &impl TestedFile) -> Div {
-        let link = self.links_computer.get_link_to(root, file);
+    fn render_file_row(
+        &self,
+        root: &impl WithPath,
+        current_page: &impl WithPath,
+        file: &impl TestedFile,
+    ) -> Div {
+        let link = self.links_computer.get_link_to(current_page, file);
+        let img_src = self.links_computer.get_link_to_resource(
+            root,
+            current_page,
+            self.get_icon_key(file).unwrap_or_default(),
+        );
 
         Div::new().with_child(
             Div::new()
@@ -103,25 +113,30 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .with_child(
                     Div::new()
                         .with_class("file-logo")
-                        .with_child(Img::new("https://raw.githubusercontent.com/rust-lang/rust-artwork/master/logo/rust-logo-blk.svg", "Rust logo")),
+                        .with_child(Img::new(&img_src, "Rust logo")),
                 )
                 .with_child(
                     Div::new()
                         .with_class("item-name")
-                        .with_child(Link::from_link_payload(link))
+                        .with_child(Link::from_link_payload(link)),
                 )
                 .with_children(self.render_aggregated_coverage(file.get_aggregated_coverage())),
         )
     }
 
-    fn render_module_row(&self, root: &impl WithPath, module: &impl TestedContainer) -> Div {
+    fn render_module_row(
+        &self,
+        root: &impl WithPath,
+        current_page: &impl WithPath,
+        module: &impl TestedContainer,
+    ) -> Div {
         let submodules = module
             .get_container_children()
-            .map(|module| self.render_module_row(root, module));
+            .map(|module| self.render_module_row(root, current_page, module));
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(root, file));
+            .map(|file| self.render_file_row(root, current_page, file));
 
         Div::new().with_class("module-div").with_child(
             Div::new()
@@ -146,7 +161,12 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         )
     }
 
-    fn render_top_module_row(&self, root: &impl WithPath, module: &impl TestedContainer) -> Div {
+    fn render_top_module_row(
+        &self,
+        root: &impl WithPath,
+        current_page: &impl WithPath,
+        module: &impl TestedContainer,
+    ) -> Div {
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h2(module.get_name()))
@@ -156,11 +176,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 
         let submodules = module
             .get_container_children()
-            .map(|module| self.render_module_row(root, module));
+            .map(|module| self.render_module_row(root, current_page, module));
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(root, file));
+            .map(|file| self.render_file_row(root, current_page, file));
 
         Div::new()
             .with_class("top-module-card")
@@ -242,6 +262,53 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             DEFAULT_CSS, content,
         );
     }
+
+    fn get_icon_key(&self, file: &impl TestedFile) -> Option<&str> {
+        match file
+            .get_path()
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+        {
+            "rs" => Some("rust.svg"),
+            "dart" => Some("dart.svg"),
+            _ => None,
+        }
+    }
+    fn get_resources_required_by_file(&self, file: &impl TestedFile) -> Option<(&str, &str)> {
+        match file
+            .get_path()
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+        {
+            "rs" => Some(("rust.svg", include_str!("resources/rust.svg"))),
+            "dart" => Some(("dart.svg", include_str!("resources/dart.svg"))),
+            _ => None,
+        }
+    }
+
+    fn get_resources_required_by_module(
+        &self,
+        module: &impl TestedContainer,
+    ) -> impl Iterator<Item = (&str, &str)> {
+        let resources_required_by_files = module
+            .get_code_file_children()
+            .map(|file| self.get_resources_required_by_file(file))
+            .flatten()
+            .into_iter();
+
+        let resources_required_by_submodules = module
+            .get_container_children()
+            .map(|submodule| self.get_resources_required_by_module(submodule))
+            .flatten()
+            .into_iter();
+
+        let resources = resources_required_by_files.chain(resources_required_by_submodules);
+        resources.collect::<Vec<(&str, &str)>>().into_iter()
+    }
 }
 
 impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksComputer> {
@@ -267,7 +334,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 Div::new().with_class("module-children").with_children(
                     module
                         .get_code_file_children()
-                        .map(|file| self.render_file_row(module, file)),
+                        .map(|file| self.render_file_row(root, module, file)),
                 ),
             );
 
@@ -283,7 +350,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             .with_children(
                 module
                     .get_container_children()
-                    .map(|submodule| self.render_top_module_row(module, submodule)),
+                    .map(|submodule| self.render_top_module_row(root, module, submodule)),
             )
             .with_child(top_level_code_files);
 
@@ -326,5 +393,12 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 );
 
         Self::render_layout(main.to_html())
+    }
+
+    fn get_required_resources(
+        &self,
+        root: &impl TestedContainer,
+    ) -> impl Iterator<Item = (&str, &str)> {
+        self.get_resources_required_by_module(root)
     }
 }

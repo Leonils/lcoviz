@@ -21,4 +21,11 @@ impl Renderer for MockRenderer {
     ) -> String {
         format!("Report for file {}", file.get_name())
     }
+
+    fn get_required_resources(
+        &self,
+        _root: &impl TestedContainer,
+    ) -> impl Iterator<Item = (&str, &str)> {
+        vec![("resource.svg", "<svg>...</svg>")].into_iter()
+    }
 }
