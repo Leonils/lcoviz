@@ -21,6 +21,10 @@ pub mod adapters {
         mod common;
         pub mod html_light_renderer;
     }
+
+    pub mod exporters {
+        pub mod mpa;
+    }
 }
 
 #[cfg(test)]

@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+#[cfg(test)]
+use mockall::automock;
+
 use pathdiff::diff_paths;
 
 use crate::file_provider::FileLinesProvider;
@@ -44,12 +47,21 @@ pub trait TestedContainer: WithPath {
 }
 
 pub trait Renderer {
-    fn render_module_coverage_details(&self, module: &impl TestedContainer) -> String;
+    fn render_module_coverage_details(
+        &self,
+        root: &impl WithPath,
+        module: &impl TestedContainer,
+    ) -> String;
     fn render_file_coverage_details(
         &self,
+        root: &impl WithPath,
         file: &impl TestedFile,
         file_provider: impl FileLinesProvider,
     ) -> String;
+}
+
+pub trait Exporter {
+    fn render_root(self) -> ();
 }
 
 pub trait WithPath {

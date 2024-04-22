@@ -5,7 +5,6 @@ use pathdiff::diff_paths;
 
 use crate::{
     adapters::renderers::common::render_optional_percentage,
-    aggregation::tested_root::TestedRoot,
     core::{Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
     html::{Div, Img, Link, Text, ToHtml},
@@ -15,9 +14,7 @@ use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 
-pub struct HtmlLightRenderer {
-    pub root: Box<TestedRoot>,
-}
+pub struct HtmlLightRenderer;
 
 impl HtmlLightRenderer {
     fn render_aggregated_counter_chip(
@@ -198,12 +195,12 @@ impl HtmlLightRenderer {
         return result;
     }
 
-    fn render_navigation(&self, file: &impl WithPath) -> Div {
-        if self.root.get_path() == file.get_path() {
+    fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
+        if root.get_path() == file.get_path() {
             return Div::new();
         }
 
-        let root_path = self.root.get_path();
+        let root_path = root.get_path();
         let file_path = file.get_path();
 
         let file_dir_path = match file_path.is_dir() {
@@ -213,12 +210,11 @@ impl HtmlLightRenderer {
 
         let mut links: Vec<Link> = Vec::new();
         let root_link = Link::new(
-            self.root
-                .get_path_relative_to(&file_dir_path)
+            root.get_path_relative_to(&file_dir_path)
                 .join("index.html")
                 .to_str()
                 .unwrap(),
-            self.root.get_name(),
+            root.get_name(),
         );
 
         for ancestor in file_path.ancestors().skip(1) {
@@ -249,7 +245,11 @@ impl HtmlLightRenderer {
 }
 
 impl Renderer for HtmlLightRenderer {
-    fn render_module_coverage_details(&self, module: &impl TestedContainer) -> String {
+    fn render_module_coverage_details(
+        &self,
+        root: &impl WithPath,
+        module: &impl TestedContainer,
+    ) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h1(module.get_name()))
@@ -276,7 +276,7 @@ impl Renderer for HtmlLightRenderer {
                     .with_class("top-module-card")
                     .with_class("header")
                     .with_child(root_top_module_div)
-                    .with_child(self.render_navigation(module)),
+                    .with_child(self.render_navigation(root, module)),
             )
             .with_children(
                 module
@@ -306,6 +306,7 @@ impl Renderer for HtmlLightRenderer {
 
     fn render_file_coverage_details(
         &self,
+        root: &impl WithPath,
         file: &impl crate::core::TestedFile,
         file_provider: impl FileLinesProvider,
     ) -> String {
@@ -339,7 +340,7 @@ impl Renderer for HtmlLightRenderer {
             self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
                 .map(|chip| chip.to_html())
                 .collect::<String>(),
-            self.render_navigation(file).to_html(),
+            self.render_navigation(root, file).to_html(),
             self.render_lines(file, lines)
         );
     }
