@@ -4,11 +4,14 @@ use std::path::PathBuf;
 use pathdiff::diff_paths;
 
 use crate::{
+    adapters::renderers::common::render_optional_percentage,
     aggregation::tested_root::TestedRoot,
     core::{Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
     html::{Div, Img, Link, Text, ToHtml},
 };
+
+use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 
@@ -17,32 +20,14 @@ pub struct HtmlLightRenderer {
 }
 
 impl HtmlLightRenderer {
-    fn render_optional_percentage(&self, percentage: Option<f32>) -> String {
-        percentage
-            .map(|p| format!("{:.2}%", p))
-            .unwrap_or("-".to_string())
-    }
-
-    fn get_percentage_class(&self, percentage: &Option<f32>) -> String {
-        percentage
-            .map(|p| {
-                if p == 100.0 {
-                    return String::from("percentage-10");
-                }
-                let first_digit = p.to_string().chars().next().unwrap();
-                return format!("percentage-{}", first_digit);
-            })
-            .unwrap_or(String::from("no-coverage"))
-    }
-
     fn render_aggregated_counter_chip(
         &self,
         name: &str,
         counter: &crate::core::AggregatedCoverageCounters,
     ) -> Div {
         let percentage = counter.percentage();
-        let percentage_class = self.get_percentage_class(&percentage);
-        let percentage_chip_class = format!("{}-chip", percentage_class);
+        let percentage_class = get_percentage_class("percentage", &percentage);
+        let percentage_chip_class = get_percentage_class("chip", &percentage);
 
         let div = Div::new()
             .with_class("coverage-stats-chip")
@@ -59,7 +44,7 @@ impl HtmlLightRenderer {
                 Div::new()
                     .with_class("coverage-stats-chip-right")
                     .with_class(&percentage_class)
-                    .with_text(&self.render_optional_percentage(percentage)),
+                    .with_text(&render_optional_percentage(percentage)),
             );
 
         div
@@ -82,7 +67,7 @@ impl HtmlLightRenderer {
         counters: &crate::core::AggregatedCoverageCounters,
     ) -> Vec<Div> {
         let percentage = counters.percentage();
-        let percentage_class = self.get_percentage_class(&percentage);
+        let percentage_class = get_percentage_class("percentage", &percentage);
 
         vec![
             Div::new()
@@ -92,7 +77,7 @@ impl HtmlLightRenderer {
             Div::new()
                 .with_class("coverage-stats")
                 .with_class(percentage_class.as_str())
-                .with_text(&self.render_optional_percentage(percentage)),
+                .with_text(&render_optional_percentage(percentage)),
         ]
     }
 

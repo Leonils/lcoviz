@@ -18,6 +18,7 @@ pub mod core;
 
 pub mod adapters {
     pub mod renderers {
+        mod common;
         pub mod html_light_renderer;
     }
 }
