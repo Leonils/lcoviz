@@ -4,7 +4,7 @@ use crate::{
     adapters::renderers::common::render_optional_percentage,
     core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
+    html::components::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
 };
 
 use super::common::get_percentage_class;

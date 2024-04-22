@@ -1,6 +1,8 @@
 pub mod file_provider;
 
-pub mod html;
+pub mod html {
+    pub mod components;
+}
 
 pub mod aggregation {
     mod aggregated;
