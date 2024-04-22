@@ -185,3 +185,20 @@ h2 {
   height: 20px;
   margin: auto;
 }
+.navigation {
+  display: flex;
+  margin: 20px 20px;
+}
+.navigation > div {
+  margin-right: 10px;
+  background-color: #eee;
+  border-radius: 15px;
+  padding: 5px 15px;
+}
+.navigation > div > a {
+  text-decoration: none;
+  color: #000;
+}
+.navigation > div > a:hover {
+  color: #555;
+}
