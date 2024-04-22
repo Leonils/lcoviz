@@ -1,3 +1,5 @@
 /target
 /tests/fixtures/report.info
 /tests/fixtures/*.html
+/lcov.info
+/coverage
