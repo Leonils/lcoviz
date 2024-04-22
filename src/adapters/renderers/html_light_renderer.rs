@@ -12,9 +12,15 @@ use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 
-pub struct HtmlLightRenderer;
+pub struct HtmlLightRenderer<TLinksComputer: LinksComputer> {
+    links_computer: TLinksComputer,
+}
 
-impl HtmlLightRenderer {
+impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
+    pub fn new(links_computer: TLinksComputer) -> Self {
+        HtmlLightRenderer { links_computer }
+    }
+
     fn render_aggregated_counter_chip(
         &self,
         name: &str,
@@ -193,13 +199,9 @@ impl HtmlLightRenderer {
         return result;
     }
 
-    fn render_navigation(
-        &self,
-        root: &impl WithPath,
-        file: &impl WithPath,
-        links_computer: &impl LinksComputer,
-    ) -> Div {
-        let links: Vec<Link> = links_computer
+    fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
+        let links: Vec<Link> = self
+            .links_computer
             .get_links_from_file(root, file)
             .map(|link| Link::new(&link.link, &link.text))
             .collect();
@@ -222,12 +224,11 @@ impl HtmlLightRenderer {
     }
 }
 
-impl Renderer for HtmlLightRenderer {
+impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksComputer> {
     fn render_module_coverage_details(
         &self,
         root: &impl WithPath,
         module: &impl TestedContainer,
-        links_computer: &impl LinksComputer,
     ) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
@@ -255,7 +256,7 @@ impl Renderer for HtmlLightRenderer {
                     .with_class("top-module-card")
                     .with_class("header")
                     .with_child(root_top_module_div)
-                    .with_child(self.render_navigation(root, module, links_computer)),
+                    .with_child(self.render_navigation(root, module)),
             )
             .with_children(
                 module
@@ -288,7 +289,6 @@ impl Renderer for HtmlLightRenderer {
         root: &impl WithPath,
         file: &impl crate::core::TestedFile,
         file_provider: &impl FileLinesProvider,
-        links_computer: &impl LinksComputer,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
         return format!(
@@ -320,7 +320,7 @@ impl Renderer for HtmlLightRenderer {
             self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
                 .map(|chip| chip.to_html())
                 .collect::<String>(),
-            self.render_navigation(root, file, links_computer).to_html(),
+            self.render_navigation(root, file).to_html(),
             self.render_lines(file, lines)
         );
     }

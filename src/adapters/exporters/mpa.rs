@@ -6,14 +6,11 @@ use crate::{
     file_provider::LocalFileLinesProvider,
 };
 
-use super::mpa_links::MpaLinksComputer;
-
 pub struct MpaExporter<'a, TRenderer: Renderer, TFileSystem: FileSystem> {
     renderer: TRenderer,
     root: TestedRoot,
     output_path_root: PathBuf,
     file_system: &'a TFileSystem,
-    links_computer: MpaLinksComputer<'a, TFileSystem>,
 }
 impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer, TFileSystem> {
     pub fn new(
@@ -22,13 +19,11 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
         output_path_root: PathBuf,
         file_system: &'a TFileSystem,
     ) -> Self {
-        let links_computer = MpaLinksComputer::new(file_system);
         MpaExporter {
             renderer,
             root,
             output_path_root,
             file_system,
-            links_computer,
         }
     }
 
@@ -50,12 +45,9 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
 
         self.file_system.write_all(
             &target_path,
-            &self.renderer.render_file_coverage_details(
-                root,
-                file,
-                &lines_provider,
-                &self.links_computer,
-            ),
+            &self
+                .renderer
+                .render_file_coverage_details(root, file, &lines_provider),
         )?;
 
         Ok(())
@@ -73,9 +65,7 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
 
         self.file_system.write_all(
             &output_path.join("index.html"),
-            &self
-                .renderer
-                .render_module_coverage_details(root, module, &self.links_computer),
+            &self.renderer.render_module_coverage_details(root, module),
         )?;
 
         for child in module.get_container_children() {

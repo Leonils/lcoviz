@@ -55,14 +55,12 @@ pub trait Renderer {
         &self,
         root: &impl WithPath,
         module: &impl TestedContainer,
-        links_computer: &impl LinksComputer,
     ) -> String;
     fn render_file_coverage_details(
         &self,
         root: &impl WithPath,
         file: &impl TestedFile,
         file_provider: &impl FileLinesProvider,
-        links_computer: &impl LinksComputer,
     ) -> String;
 }
 
