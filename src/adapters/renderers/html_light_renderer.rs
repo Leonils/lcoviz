@@ -239,10 +239,14 @@ impl HtmlLightRenderer {
         let mut d = Div::new().with_class("navigation");
         for link in links {
             d = d
-                .with_child(Div::new().with_child(link))
+                .with_child(Div::new().with_class("navigation-part").with_child(link))
                 .with_child(Div::new().with_text(" / "))
         }
-        d.with_child(Div::new().with_text(file.get_name()))
+        d.with_child(
+            Div::new()
+                .with_class("navigation-part")
+                .with_text(file.get_name()),
+        )
     }
 }
 

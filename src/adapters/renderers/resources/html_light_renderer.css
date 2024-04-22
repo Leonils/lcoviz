@@ -191,9 +191,11 @@ h2 {
 }
 .navigation > div {
   margin-right: 10px;
+  padding: 5px 15px;
+}
+.navigation > .navigation-part {
   background-color: #eee;
   border-radius: 15px;
-  padding: 5px 15px;
 }
 .navigation > div > a {
   text-decoration: none;
