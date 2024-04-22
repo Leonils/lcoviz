@@ -208,10 +208,18 @@ impl HtmlLightRenderer {
         return result;
     }
 
-    fn render_navigation(&self, file: &impl TestedFile) -> Div {
+    fn render_navigation(&self, file: &impl WithPath) -> Div {
+        if self.root.get_path() == file.get_path() {
+            return Div::new();
+        }
+
         let root_path = self.root.get_path();
         let file_path = file.get_path();
-        let file_dir_path = file_path.parent().unwrap().to_path_buf();
+
+        let file_dir_path = match file_path.is_dir() {
+            true => file_path.to_path_buf(),
+            false => file_path.parent().unwrap().to_path_buf(),
+        };
 
         let mut links: Vec<Link> = Vec::new();
         let root_link = Link::new(
@@ -223,7 +231,7 @@ impl HtmlLightRenderer {
             self.root.get_name(),
         );
 
-        for ancestor in file_dir_path.ancestors() {
+        for ancestor in file_path.ancestors().skip(1) {
             if ancestor == root_path {
                 break;
             }
@@ -233,7 +241,7 @@ impl HtmlLightRenderer {
                 .join("index.html");
             let link = Link::new(
                 target.to_str().unwrap(),
-                ancestor.file_name().unwrap().to_str().unwrap(),
+                ancestor.file_name().unwrap_or_default().to_str().unwrap(),
             );
 
             links.push(link);
@@ -277,7 +285,8 @@ impl Renderer for HtmlLightRenderer {
                 Div::new()
                     .with_class("top-module-card")
                     .with_class("header")
-                    .with_child(root_top_module_div),
+                    .with_child(root_top_module_div)
+                    .with_child(self.render_navigation(module)),
             )
             .with_children(
                 module

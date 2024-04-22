@@ -49,10 +49,6 @@ impl TestedCodeFile {
 }
 
 impl TestedFile for TestedCodeFile {
-    fn get_name(&self) -> &str {
-        &self.file_name
-    }
-
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }
@@ -66,6 +62,10 @@ impl TestedFile for TestedCodeFile {
 }
 
 impl WithPath for TestedCodeFile {
+    fn get_name(&self) -> &str {
+        &self.file_name
+    }
+
     fn get_path_string(&self) -> String {
         self.path.clone()
     }

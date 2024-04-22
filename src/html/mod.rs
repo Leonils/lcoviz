@@ -103,10 +103,7 @@ impl<'a> ToHtml for Div<'a> {
         };
         let children_html: String = self.children.iter().map(|c| c.to_html()).collect();
 
-        match children_html.len() {
-            0 => format!("<div{} />", class_attr),
-            _ => format!("<div{}>{}</div>", class_attr, children_html),
-        }
+        format!("<div{}>{}</div>", class_attr, children_html)
     }
 }
 
@@ -117,13 +114,13 @@ mod tests {
     #[test]
     fn empty_div_shall_render() {
         let div = Div::new();
-        assert_eq!(div.to_html(), "<div />");
+        assert_eq!(div.to_html(), "<div></div>");
     }
 
     #[test]
     fn empty_div_with_class_shall_render() {
         let div = Div::new().with_class("my-class");
-        assert_eq!(div.to_html(), "<div class=\"my-class\" />");
+        assert_eq!(div.to_html(), "<div class=\"my-class\"></div>");
     }
 
     #[test]
@@ -131,7 +128,10 @@ mod tests {
         let div = Div::new()
             .with_class("my-class")
             .with_class("my-other-class");
-        assert_eq!(div.to_html(), "<div class=\"my-class my-other-class\" />");
+        assert_eq!(
+            div.to_html(),
+            "<div class=\"my-class my-other-class\"></div>"
+        );
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
             .with_child(Div::new().with_class("child-class"));
         assert_eq!(
             div.to_html(),
-            "<div class=\"my-class\"><div class=\"child-class\" /></div>"
+            "<div class=\"my-class\"><div class=\"child-class\"></div></div>"
         );
     }
 
@@ -153,7 +153,7 @@ mod tests {
             .with_child(Div::new().with_class("child2-class"));
         assert_eq!(
             div.to_html(),
-            "<div class=\"my-class\"><div class=\"child1-class\" /><div class=\"child2-class\" /></div>"
+            "<div class=\"my-class\"><div class=\"child1-class\"></div><div class=\"child2-class\"></div></div>"
         );
     }
 

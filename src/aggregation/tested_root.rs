@@ -88,10 +88,6 @@ impl TestedRoot {
 }
 
 impl TestedContainer for TestedRoot {
-    fn get_name(&self) -> &str {
-        "Test report"
-    }
-
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }
@@ -106,6 +102,10 @@ impl TestedContainer for TestedRoot {
 }
 
 impl WithPath for TestedRoot {
+    fn get_name(&self) -> &str {
+        "Test report"
+    }
+
     fn get_path_string(&self) -> String {
         self.prefix.to_str().unwrap().to_string()
     }
