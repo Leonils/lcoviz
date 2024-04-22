@@ -150,7 +150,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(Text::h2(module.get_name()))
-            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()));
+            .with_child(Div::new().with_class("fill"))
+            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
+            .with_child(Div::new().with_class("w-20"));
 
         let submodules = module
             .get_container_children()
@@ -250,8 +252,9 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
     ) -> String {
         let root_top_module_div = Div::new()
             .with_class("top-module")
-            .with_child(Text::h1(module.get_name()))
-            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()));
+            .with_child(Div::new().with_class("fill"))
+            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
+            .with_child(Div::new().with_class("w-20"));
 
         let top_level_code_files = Div::new()
             .with_class("top-module-card")
@@ -274,6 +277,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("top-module-card")
                     .with_class("header")
                     .with_child(root_top_module_div)
+                    .with_child(Text::h1(module.get_name()))
                     .with_child(self.render_navigation(root, module)),
             )
             .with_children(
@@ -301,11 +305,13 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         .with_child(
                             Div::new()
                                 .with_class("top-module")
-                                .with_child(Text::h1(file.get_name()))
+                                .with_child(Div::new().with_class("fill"))
                                 .with_children(self.render_aggregated_coverage_chips(
                                     file.get_aggregated_coverage(),
-                                )),
+                                ))
+                                .with_child(Div::new().with_class("w-20")),
                         )
+                        .with_child(Text::h1(file.get_name()))
                         .with_child(self.render_navigation(root, file)),
                 )
                 .with_child(

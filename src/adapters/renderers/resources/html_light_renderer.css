@@ -4,8 +4,8 @@ body {
 }
 h1 {
   font-weight: 400;
-  font-size: xxx-large;
-  margin: 10px 10px 10px 0;
+  font-size: xx-large;
+  margin: 0px 10px 10px 0;
 }
 h2 {
   font-weight: 400;
@@ -56,19 +56,32 @@ h2 {
   margin-bottom: 60px;
 }
 .top-module-card {
-  margin-top: 20px;
+  margin-top: 48px;
+  position: relative;
   border-radius: 4px;
   background-color: #fff;
-  padding: 20px;
+  padding: 30px 20px 10px 20px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 .top-module {
+  position: absolute;
+  top: -38px;
+  height: 58px;
+  left: 0;
+  width: 100%;
   display: flex;
-  margin: 0 0 30px 20px;
 }
-.top-module > h2,
-.top-module > h1 {
+.fill {
   flex-grow: 1;
+}
+.w-20 {
+  width: 20px;
+}
+.top-module > h2 {
+  background-color: white;
+  padding: 5px 20px;
+  border-radius: 8px;
+  font-size: x-large;
 }
 .coverage-stats-chip {
   border: solid 2px #555;
