@@ -177,3 +177,11 @@ h2 {
 .line-not-covered {
   background-color: #dfb0b0;
 }
+.file-logo {
+  display: flex;
+}
+.file-logo > img {
+  width: 20px;
+  height: 20px;
+  margin: auto;
+}

@@ -62,6 +62,28 @@ impl ToHtml for Link {
     }
 }
 
+pub struct Img {
+    src: String,
+    alt: String,
+}
+impl Img {
+    pub fn new(src: &str, alt: &str) -> Self {
+        Img {
+            src: src.to_string(),
+            alt: alt.to_string(),
+        }
+    }
+}
+impl ToHtml for Img {
+    fn to_html(&self) -> String {
+        format!(
+            "<img src=\"{}\" alt=\"{}\" />",
+            self.src,
+            encode_minimal(&self.alt)
+        )
+    }
+}
+
 pub struct Div<'a> {
     class_names: Vec<String>,
     children: Vec<Box<dyn ToHtml + 'a>>,
@@ -248,6 +270,35 @@ mod tests {
         assert_eq!(
             link.to_html(),
             "<a href=\"https://<example>.com\">&lt;Example&gt;</a>"
+        );
+    }
+
+    #[test]
+    fn img_shall_render() {
+        let img = Img::new("https://example.com/image.png", "Example");
+        assert_eq!(
+            img.to_html(),
+            "<img src=\"https://example.com/image.png\" alt=\"Example\" />"
+        );
+    }
+
+    #[test]
+    fn img_alt_text_shall_be_escaped() {
+        let img = Img::new("https://example.com/image.png", "<Example>");
+        assert_eq!(
+            img.to_html(),
+            "<img src=\"https://example.com/image.png\" alt=\"&lt;Example&gt;\" />"
+        );
+    }
+
+    #[test]
+    fn div_with_img_shall_render() {
+        let div = Div::new()
+            .with_class("my-class")
+            .with_child(Img::new("https://example.com/image.png", "Example"));
+        assert_eq!(
+            div.to_html(),
+            "<div class=\"my-class\"><img src=\"https://example.com/image.png\" alt=\"Example\" /></div>"
         );
     }
 }

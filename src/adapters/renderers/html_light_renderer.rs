@@ -7,7 +7,7 @@ use crate::{
     aggregation::tested_root::TestedRoot,
     core::{Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::{Div, Link, Text, ToHtml},
+    html::{Div, Img, Link, Text, ToHtml},
 };
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
@@ -119,6 +119,11 @@ impl HtmlLightRenderer {
         Div::new().with_child(
             Div::new()
                 .with_class("file-row")
+                .with_child(
+                    Div::new()
+                        .with_class("file-logo")
+                        .with_child(Img::new("https://raw.githubusercontent.com/rust-lang/rust-artwork/master/logo/rust-logo-blk.svg", "Rust logo")),
+                )
                 .with_child(
                     Div::new()
                         .with_class("item-name")
