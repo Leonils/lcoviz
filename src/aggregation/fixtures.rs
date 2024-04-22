@@ -1,6 +1,6 @@
 use crate::core::{AggregatedCoverage, AggregatedCoverageCounters};
 
-use super::{tested_file::TestedCodeFile, tested_root::TestedRoot};
+use super::{tested_file::TestedCodeFile, tested_module::TestedModule, tested_root::TestedRoot};
 
 pub struct AggregatedFixtures {}
 impl AggregatedFixtures {
@@ -48,5 +48,13 @@ impl AggregatedFixtures {
         );
         let report = TestedRoot::from_source_files(vec![main_cpp]);
         report
+    }
+
+    pub fn get_nested_file_in_report() -> TestedRoot {
+        let main_cpp = TestedCodeFile::new("main.cpp", "main.cpp");
+        let nested_cpp = TestedCodeFile::new("module/nested.cpp", "nested.cpp");
+        let module = TestedModule::from_source_files("module", "module", vec![nested_cpp]);
+        let root = TestedRoot::from_source_files_and_modules(vec![main_cpp], vec![module]);
+        root
     }
 }

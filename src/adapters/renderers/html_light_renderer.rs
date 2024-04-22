@@ -308,7 +308,7 @@ impl Renderer for HtmlLightRenderer {
         &self,
         root: &impl WithPath,
         file: &impl crate::core::TestedFile,
-        file_provider: impl FileLinesProvider,
+        file_provider: &impl FileLinesProvider,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
         return format!(

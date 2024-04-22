@@ -131,6 +131,18 @@ impl TestedRoot {
         }
     }
 
+    pub fn from_source_files_and_modules(
+        source_files: Vec<TestedCodeFile>,
+        modules: Vec<TestedModule>,
+    ) -> Self {
+        TestedRoot {
+            aggregated: AggregatedCoverage::default(),
+            modules,
+            source_files,
+            prefix: PathBuf::from(""),
+        }
+    }
+
     pub fn from_original_report(report: lcov::report::Report) -> Self {
         TestedRoot::new(AggregatorInput::new(report))
     }

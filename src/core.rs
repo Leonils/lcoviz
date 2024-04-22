@@ -1,8 +1,5 @@
 use std::path::PathBuf;
 
-#[cfg(test)]
-use mockall::automock;
-
 use pathdiff::diff_paths;
 
 use crate::file_provider::FileLinesProvider;
@@ -56,7 +53,7 @@ pub trait Renderer {
         &self,
         root: &impl WithPath,
         file: &impl TestedFile,
-        file_provider: impl FileLinesProvider,
+        file_provider: &impl FileLinesProvider,
     ) -> String;
 }
 

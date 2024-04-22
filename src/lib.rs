@@ -20,6 +20,9 @@ pub mod adapters {
     pub mod renderers {
         mod common;
         pub mod html_light_renderer;
+
+        #[cfg(test)]
+        pub mod mock_renderer;
     }
 
     pub mod exporters {

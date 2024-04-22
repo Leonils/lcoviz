@@ -1,5 +1,5 @@
 use lcov::Report;
-use lcov_aggregator_report::adapters::exporters::mpa::MpaExporter;
+use lcov_aggregator_report::adapters::exporters::mpa::{LocalFileSystem, MpaExporter};
 use lcov_aggregator_report::adapters::renderers::html_light_renderer::HtmlLightRenderer;
 use lcov_aggregator_report::aggregation::input::AggregatorInput;
 use lcov_aggregator_report::aggregation::tested_root::TestedRoot;
@@ -20,7 +20,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tested_root = TestedRoot::new(aggregator_input);
     let renderer = HtmlLightRenderer;
 
-    let exporter = MpaExporter::new(renderer, tested_root, output_path);
+    let file_system = LocalFileSystem;
+    let exporter = MpaExporter::new(renderer, tested_root, output_path, file_system);
     exporter.render_root();
 
     Ok(())
