@@ -4,7 +4,7 @@ use crate::{
     adapters::renderers::common::render_optional_percentage,
     core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::{Div, Img, Link, Text, ToHtml},
+    html::{Div, Img, Link, Pre, Text, ToHtml},
 };
 
 use super::common::get_percentage_class;
@@ -171,27 +171,33 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_lines(&self, file: &impl crate::core::TestedFile, lines: Vec<String>) -> String {
-        let mut result = String::new();
-        for (i, line) in lines.iter().enumerate() {
-            let line_number = i + 1;
-            let coverage = file.get_line_coverage(line_number as u32);
+    fn render_line(line_number: u32, file: &impl crate::core::TestedFile, line: String) -> Div {
+        let coverage = file.get_line_coverage(line_number as u32);
 
-            let line_div = match coverage {
-                Some(cov) if cov > 0 => Div::new()
-                    .with_class("line-covered")
-                    .with_text(&format!("{:4} | {:4} | {}", line_number, cov, line)),
-                Some(cov) => Div::new()
-                    .with_class("line-not-covered")
-                    .with_text(&format!("{:4} | {:4} | {}", line_number, cov, line)),
-                None => Div::new()
-                    .with_class("line-not-tested")
-                    .with_text(&format!("{:4} |      | {}", line_number, line)),
-            };
+        let class = match coverage {
+            Some(cov) if cov > 0 => "line-covered",
+            Some(_) => "line-not-covered",
+            None => "line-not-tested",
+        };
 
-            result.push_str(&line_div.to_html());
-        }
-        return result;
+        let line = match coverage {
+            Some(cov) => format!("{:4} | {:4} | {}", line_number, cov, line),
+            None => format!("{:4} |      | {}", line_number, line),
+        };
+
+        Div::new().with_class(class).with_child(Pre::new(&line))
+    }
+
+    fn render_lines(
+        file: &impl crate::core::TestedFile,
+        lines: Vec<String>,
+    ) -> impl Iterator<Item = Div> {
+        lines
+            .iter()
+            .enumerate()
+            .map(|(i, line)| Self::render_line(i as u32 + 1, file, line.clone()))
+            .collect::<Vec<Div>>()
+            .into_iter()
     }
 
     fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
@@ -216,6 +222,25 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .with_class("navigation-part")
                 .with_text(file.get_name()),
         )
+    }
+
+    fn render_layout(content: String) -> String {
+        return format!(
+            "<html>
+    <head>
+        <title>Coverage report</title>
+        <style type=\"text/css\">
+            {}
+        </style>
+    </head>
+    <body>
+        <main class=\"responsive-container\">
+            {}
+        </main>
+    </body>
+</html>",
+            DEFAULT_CSS, content,
+        );
     }
 }
 
@@ -260,23 +285,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             )
             .with_child(top_level_code_files);
 
-        return format!(
-            "<html>
-    <head>
-        <title>Coverage report</title>
-        <style type=\"text/css\">
-            {}
-        </style>
-    </head>
-    <body>
-        <main class=\"responsive-container\">
-            {}
-        </main>
-    </body>
-</html>",
-            DEFAULT_CSS,
-            main.to_html()
-        );
+        return Self::render_layout(main.to_html());
     }
 
     fn render_file_coverage_details(
@@ -286,37 +295,32 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         file_provider: &impl FileLinesProvider,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
-        return format!(
-            "<html>
-    <head>
-        <title>Coverage report</title>
-        <style type=\"text/css\">
-            {}
-        </style>
-    </head>
-    <body>
-        <main class=\"responsive-container\">
-            <div class=\"top-module-card\">
-                <div class=\"top-module\">
-                    <h1>File: {}</h1>
-                    {}
-                </div>
-                {}
-            </div>
-            <div class=\"top-module-card\">
-                <h2>Lines</h2>
-                <pre>{}</pre>
-            </div>
-        </main>
-    </body>
-</html>",
-            DEFAULT_CSS,
-            file.get_name(),
-            self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
-                .map(|chip| chip.to_html())
-                .collect::<String>(),
-            self.render_navigation(root, file).to_html(),
-            self.render_lines(file, lines)
-        );
+        let main =
+            Div::new()
+                .with_child(
+                    Div::new()
+                        .with_class("top-module-card")
+                        .with_child(
+                            Div::new()
+                                .with_class("top-module")
+                                .with_child(Text::h1(file.get_name()))
+                                .with_children(self.render_aggregated_coverage_chips(
+                                    file.get_aggregated_coverage(),
+                                )),
+                        )
+                        .with_child(self.render_navigation(root, file)),
+                )
+                .with_child(
+                    Div::new()
+                        .with_class("top-module-card")
+                        .with_child(Text::h2("Lines"))
+                        .with_child(
+                            Div::new()
+                                .with_class("lines")
+                                .with_children(Self::render_lines(file, lines)),
+                        ),
+                );
+
+        Self::render_layout(main.to_html())
     }
 }

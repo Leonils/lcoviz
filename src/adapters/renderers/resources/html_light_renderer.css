@@ -171,6 +171,11 @@ h2 {
 .chip-none {
   border-color: #ddddddaa;
 }
+.line-covered > pre,
+.line-not-covered > pre,
+.line-not-tested > pre {
+  margin: 0;
+}
 .line-covered {
   background-color: #b0dfb0;
 }

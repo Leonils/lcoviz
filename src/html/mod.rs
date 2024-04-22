@@ -89,6 +89,22 @@ impl ToHtml for Img {
     }
 }
 
+pub struct Pre {
+    content: String,
+}
+impl Pre {
+    pub fn new(content: &str) -> Self {
+        Pre {
+            content: content.to_string(),
+        }
+    }
+}
+impl ToHtml for Pre {
+    fn to_html(&self) -> String {
+        format!("<pre>{}</pre>", encode_minimal(&self.content))
+    }
+}
+
 pub struct Div<'a> {
     class_names: Vec<String>,
     children: Vec<Box<dyn ToHtml + 'a>>,
@@ -305,5 +321,11 @@ mod tests {
             div.to_html(),
             "<div class=\"my-class\"><img src=\"https://example.com/image.png\" alt=\"Example\" /></div>"
         );
+    }
+
+    #[test]
+    fn pre_shall_render() {
+        let pre = Pre::new("Hello, World!");
+        assert_eq!(pre.to_html(), "<pre>Hello, World!</pre>");
     }
 }
