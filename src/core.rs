@@ -34,8 +34,6 @@ pub struct AggregatedCoverage {
 
 pub trait TestedFile: WithPath {
     fn get_name(&self) -> &str;
-    fn get_file_path(&self) -> &str;
-    fn get_path_relative_to_prefix(&self) -> &str;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_line_coverage(&self, line: u32) -> Option<u64>;
 }

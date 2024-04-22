@@ -1,6 +1,8 @@
 use std::include_str;
 use std::path::PathBuf;
 
+use pathdiff::diff_paths;
+
 use crate::{
     aggregation::tested_root::TestedRoot,
     core::{Renderer, TestedContainer, TestedFile, WithPath},
@@ -204,6 +206,49 @@ impl HtmlLightRenderer {
         }
         return result;
     }
+
+    fn render_navigation(&self, file: &impl TestedFile) -> Div {
+        let root_path = self.root.get_path();
+        let file_path = file.get_path();
+
+        let mut links: Vec<Link> = Vec::new();
+        let root_link = Link::new(
+            self.root
+                .get_path_relative_to(&file_path)
+                .join("index.html")
+                .to_str()
+                .unwrap(),
+            self.root.get_name(),
+        );
+
+        for ancestor in file_path.ancestors().skip(1) {
+            if ancestor == root_path {
+                break;
+            }
+
+            let target = diff_paths(ancestor, &file_path).unwrap().join("index.html");
+            let link = Link::new(
+                target.to_str().unwrap(),
+                ancestor.file_name().unwrap().to_str().unwrap(),
+            );
+
+            links.push(link);
+        }
+
+        links.push(root_link);
+        links.reverse();
+
+        let mut d = Div::new();
+        for link in links {
+            d = d.with_child(link).with_text(" / ")
+        }
+        d = d.with_text(file.get_name());
+
+        // Div::new()
+        //     .with_class("navigation")
+        //     .with_children(links.into_iter())
+        d
+    }
 }
 
 impl Renderer for HtmlLightRenderer {
@@ -284,6 +329,7 @@ impl Renderer for HtmlLightRenderer {
                     <h1>File: {}</h1>
                     {}
                 </div>
+                {}
             </div>
             <div class=\"top-module-card\">
                 <h2>Lines</h2>
@@ -297,6 +343,7 @@ impl Renderer for HtmlLightRenderer {
             self.render_aggregated_coverage_chips(file.get_aggregated_coverage())
                 .map(|chip| chip.to_html())
                 .collect::<String>(),
+            self.render_navigation(file).to_html(),
             self.render_lines(file, lines)
         );
     }

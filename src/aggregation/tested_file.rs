@@ -53,14 +53,6 @@ impl TestedFile for TestedCodeFile {
         &self.file_name
     }
 
-    fn get_file_path(&self) -> &str {
-        &self.path
-    }
-
-    fn get_path_relative_to_prefix(&self) -> &str {
-        &self.path_relative_to_prefix
-    }
-
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }
