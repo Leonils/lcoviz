@@ -217,3 +217,28 @@ a:hover {
   justify-content: space-around;
   margin: 80px 20px 40px 20px;
 }
+.function {
+  display: flex;
+  margin: 5px 0;
+}
+.function > .function-name {
+  margin: auto 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+.function > .function-hit {
+  margin: auto 10px;
+}
+.function-covered > .function-name {
+  background-color: #b6efb6;
+}
+.function-uncovered > .function-name {
+  background-color: #ffb7b7;
+}
+.function-covered > .function-hit {
+  color: #66aa66;
+}
+.function-uncovered > .function-hit {
+  color: #cc5a5a;
+}

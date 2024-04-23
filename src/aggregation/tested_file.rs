@@ -59,6 +59,13 @@ impl TestedFile for TestedCodeFile {
             .get(&LineKey { line })
             .map_or(None, |value| Some(value.count))
     }
+
+    fn get_functions(&self) -> impl Iterator<Item = (String, u64)> {
+        self.section
+            .functions
+            .iter()
+            .map(|(key, value)| (key.name.clone(), value.count))
+    }
 }
 
 impl WithPath for TestedCodeFile {

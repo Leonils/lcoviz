@@ -42,6 +42,7 @@ pub struct AggregatedCoverage {
 pub trait TestedFile: WithPath {
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_line_coverage(&self, line: u32) -> Option<u64>;
+    fn get_functions(&self) -> impl Iterator<Item = (String, u64)>;
 }
 
 pub trait TestedContainer: WithPath {

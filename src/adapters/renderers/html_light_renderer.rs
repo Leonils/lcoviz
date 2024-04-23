@@ -14,6 +14,8 @@ const GAUGE_CSS: &str = include_str!("resources/gauge.css");
 const COLORS_CSS: &str = include_str!("resources/colors.css");
 const MODULE_SVG: &str = include_str!("resources/module.svg");
 const MODULE_MAIN_SVG: &str = include_str!("resources/module-main.svg");
+const FUNCTION_COVERED_SVG: &str = include_str!("resources/function_covered.svg");
+const FUNCTION_UNCOVERED_SVG: &str = include_str!("resources/function_uncovered.svg");
 
 pub struct HtmlLightRenderer<TLinksComputer: LinksComputer> {
     links_computer: TLinksComputer,
@@ -268,6 +270,48 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         Table::new().with_rows(rows)
     }
 
+    fn render_functions(&self, root: &impl WithPath, file: &impl crate::core::TestedFile) -> Div {
+        let functions = file.get_functions();
+
+        let covered_svg =
+            self.links_computer
+                .get_link_to_resource(root, file, "function_covered.svg");
+        let uncovered_svg =
+            self.links_computer
+                .get_link_to_resource(root, file, "function_uncovered.svg");
+
+        let functions = functions.map(|(name, count)| {
+            Div::new()
+                .with_class("function")
+                .with_class(if count > 0 {
+                    "function-covered"
+                } else {
+                    "function-uncovered"
+                })
+                .with_child(Img::new(
+                    if count > 0 {
+                        &covered_svg
+                    } else {
+                        &uncovered_svg
+                    },
+                    "Function coverage",
+                ))
+                .with_child(
+                    Div::new()
+                        .with_class("function-name")
+                        .with_child(Text::new(&name)),
+                )
+                .with_child(Div::new().with_class("fill"))
+                .with_child(
+                    Div::new()
+                        .with_class("function-hit")
+                        .with_child(Text::new(&format!("{} calls", count))),
+                )
+        });
+
+        Div::new().with_children(functions)
+    }
+
     fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
         let links: Vec<Link> = self
             .links_computer
@@ -430,6 +474,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         file_provider: &impl FileLinesProvider,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
+
         let main = Div::new()
             .with_child(
                 Div::new()
@@ -451,6 +496,13 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                             .with_class("lines")
                             .with_child(Self::render_lines(file, lines)),
                     ),
+            )
+            .with_child(
+                Div::new()
+                    .with_class("details-card")
+                    .with_child(Text::h2("Functions"))
+                    .with_child(Div::new().with_class("functions"))
+                    .with_child(self.render_functions(root, file)),
             );
 
         self.render_layout(root, file, main.to_html())
@@ -467,6 +519,8 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 ("colors.css", COLORS_CSS),
                 ("module.svg", MODULE_SVG),
                 ("module-main.svg", MODULE_MAIN_SVG),
+                ("function_covered.svg", FUNCTION_COVERED_SVG),
+                ("function_uncovered.svg", FUNCTION_UNCOVERED_SVG),
             ]
             .into_iter(),
         )
