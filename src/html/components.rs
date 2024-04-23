@@ -63,26 +63,31 @@ impl ToHtml for Text {
 
 pub struct Link {
     href: String,
-    text: String,
+    child: Box<dyn ToHtml>,
 }
 impl Link {
-    pub fn new(href: &str, text: &str) -> Self {
+    pub fn from_child(href: &str, child: Box<dyn ToHtml>) -> Self {
         Link {
             href: href.to_string(),
-            text: text.to_string(),
+            child,
+        }
+    }
+    pub fn from_text(href: &str, text: &str) -> Self {
+        Link {
+            href: href.to_string(),
+            child: Box::new(Text::new(text)),
         }
     }
     pub fn from_link_payload(LinkPayload { link, text }: LinkPayload) -> Self {
-        Link { href: link, text }
+        Link {
+            href: link,
+            child: Box::new(Text::new(&text)),
+        }
     }
 }
 impl ToHtml for Link {
     fn to_html(&self) -> String {
-        format!(
-            "<a href=\"{}\">{}</a>",
-            self.href,
-            encode_minimal(&self.text)
-        )
+        format!("<a href=\"{}\">{}</a>", self.href, self.child.to_html(),)
     }
 }
 
@@ -360,10 +365,19 @@ mod tests {
 
     #[test]
     fn link_shall_render() {
-        let link = Link::new("https://example.com", "Example");
+        let link = Link::from_text("https://example.com", "Example");
         assert_eq!(
             link.to_html(),
             "<a href=\"https://example.com\">Example</a>"
+        );
+    }
+
+    #[test]
+    fn link_with_h2_inside_shall_render() {
+        let link = Link::from_child("https://example.com", Box::new(Text::h2("Example")));
+        assert_eq!(
+            link.to_html(),
+            "<a href=\"https://example.com\"><h2>Example</h2></a>"
         );
     }
 
@@ -380,7 +394,7 @@ mod tests {
 
     #[test]
     fn link_content_shall_be_escaped() {
-        let link = Link::new("https://<example>.com", "<Example>");
+        let link = Link::from_text("https://<example>.com", "<Example>");
         assert_eq!(
             link.to_html(),
             "<a href=\"https://<example>.com\">&lt;Example&gt;</a>"

@@ -145,11 +145,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .with_child(
                     Div::new()
                         .with_class("module-row")
-                        .with_child(
-                            Div::new()
-                                .with_class("item-name")
-                                .with_text(module.get_name()),
-                        )
+                        .with_child(Div::new().with_class("item-name").with_child(
+                            Link::from_link_payload(
+                                self.links_computer.get_link_to(current_page, module),
+                            ),
+                        ))
                         .with_children(
                             self.render_aggregated_coverage(module.get_aggregated_coverage()),
                         ),
@@ -169,18 +169,22 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         current_page: &impl WithPath,
         module: &impl TestedContainer,
     ) -> Div {
+        let module_img_href =
+            self.links_computer
+                .get_link_to_resource(root, current_page, "module.svg");
+
+        let module_page_href = self.links_computer.get_link_to(current_page, module);
+
         let top_module_div = Div::new()
             .with_class("top-module")
             .with_child(
                 Div::new()
                     .with_class("tab")
-                    .with_child(Img::new(
-                        &self
-                            .links_computer
-                            .get_link_to_resource(root, current_page, "module.svg"),
-                        "Module icon",
-                    ))
-                    .with_child(Text::h2(module.get_name()).with_class("code-file-name")),
+                    .with_child(Img::new(&module_img_href, "Module icon"))
+                    .with_child(Link::from_child(
+                        &module_page_href.link,
+                        Box::new(Text::h2(module.get_name()).with_class("code-file-name")),
+                    )),
             )
             .with_child(Div::new().with_class("fill"))
             .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
@@ -236,7 +240,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         let links: Vec<Link> = self
             .links_computer
             .get_links_from_file(root, file)
-            .map(|link| Link::new(&link.link, &link.text))
+            .map(|link| Link::from_link_payload(link))
             .collect();
 
         if links.len() == 0 {

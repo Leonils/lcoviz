@@ -116,9 +116,12 @@ h2 {
   height: 28px;
   margin: auto 10px auto 0;
 }
-.tab > h2 {
+.tab > a {
+  margin: auto 10px;
+}
+.tab > a > h2 {
   font-size: x-large;
-  margin: auto 5px;
+  margin: 0;
 }
 .coverage-stats-chip {
   border: solid 2px #555;
@@ -277,11 +280,11 @@ h2 {
   background-color: #eee;
   border-radius: 15px;
 }
-.navigation > div > a {
+a {
   text-decoration: none;
   color: #000;
 }
-.navigation > div > a:hover {
+a:hover {
   color: #555;
 }
 .code-file-name {
