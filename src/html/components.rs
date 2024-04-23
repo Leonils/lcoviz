@@ -9,12 +9,14 @@ pub trait ToHtml {
 pub struct Text {
     level: u8,
     content: String,
+    class_names: Vec<String>,
 }
 impl Text {
     pub fn new(content: &str) -> Self {
         Text {
             level: 0,
             content: content.to_string(),
+            class_names: Vec::new(),
         }
     }
 
@@ -22,6 +24,7 @@ impl Text {
         Text {
             level: 1,
             content: content.to_string(),
+            class_names: Vec::new(),
         }
     }
 
@@ -29,14 +32,30 @@ impl Text {
         Text {
             level: 2,
             content: content.to_string(),
+            class_names: Vec::new(),
         }
+    }
+
+    pub fn with_class(mut self, class: &str) -> Self {
+        self.class_names.push(class.to_string());
+        self
     }
 }
 impl ToHtml for Text {
     fn to_html(&self) -> String {
+        let class_attr = match self.class_names.len() {
+            0 => String::new(),
+            _ => format!(" class=\"{}\"", self.class_names.join(" ")),
+        };
         match self.level {
             0 => encode_minimal(&self.content),
-            i if i > 0 && i < 7 => format!("<h{}>{}</h{}>", i, encode_minimal(&self.content), i),
+            i if i > 0 && i < 7 => format!(
+                "<h{}{}>{}</h{}>",
+                i,
+                class_attr,
+                encode_minimal(&self.content),
+                i
+            ),
             _ => panic!("Unsupported level: {}", self.level),
         }
     }
@@ -280,10 +299,22 @@ mod tests {
     }
 
     #[test]
+    fn h2_with_class_names_shall_render() {
+        let text = Text::h2("Hello, World!")
+            .with_class("my-class")
+            .with_class("my-other-class");
+        assert_eq!(
+            text.to_html(),
+            "<h2 class=\"my-class my-other-class\">Hello, World!</h2>"
+        );
+    }
+
+    #[test]
     fn h6_shall_render() {
         let text = Text {
             level: 6,
             content: "Hello, World!".to_string(),
+            class_names: Vec::new(),
         };
         assert_eq!(text.to_html(), "<h6>Hello, World!</h6>");
     }
@@ -294,6 +325,7 @@ mod tests {
         let text = Text {
             level: 7,
             content: "Hello, World!".to_string(),
+            class_names: Vec::new(),
         };
         text.to_html();
     }

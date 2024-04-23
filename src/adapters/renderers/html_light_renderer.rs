@@ -169,7 +169,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     ) -> Div {
         let top_module_div = Div::new()
             .with_class("top-module")
-            .with_child(Text::h2(module.get_name()))
+            .with_child(
+                Div::new()
+                    .with_class("tab")
+                    .with_child(Text::h2(module.get_name()).with_class("code-file-name")),
+            )
             .with_child(Div::new().with_class("fill"))
             .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
             .with_child(Div::new().with_class("w-20"));
@@ -331,9 +335,11 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         let top_level_code_files = Div::new()
             .with_class("top-module-card")
             .with_child(
-                Div::new()
-                    .with_class("top-module")
-                    .with_child(Text::h2("Top level code files")),
+                Div::new().with_class("top-module").with_child(
+                    Div::new()
+                        .with_class("tab")
+                        .with_child(Text::h2("Top level code files")),
+                ),
             )
             .with_child(
                 Div::new().with_class("module-children").with_children(
@@ -394,13 +400,13 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                                     ),
                                     "File icon",
                                 ))
-                                .with_child(Text::h1(file.get_name())),
+                                .with_child(Text::h1(file.get_name()).with_class("code-file-name")),
                         )
                         .with_child(self.render_navigation(root, file)),
                 )
                 .with_child(
                     Div::new()
-                        .with_class("top-module-card")
+                        .with_class("details-card")
                         .with_child(Text::h2("Lines"))
                         .with_child(
                             Div::new()

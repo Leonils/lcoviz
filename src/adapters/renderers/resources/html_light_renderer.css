@@ -14,6 +14,7 @@ h2 {
 }
 .title-with-image {
   display: flex;
+  margin-bottom: 40px;
 }
 .title-with-image > img {
   width: 40px;
@@ -67,12 +68,23 @@ h2 {
   margin-bottom: 60px;
 }
 .top-module-card {
-  margin-top: 48px;
+  margin-top: 56px;
+  padding: 30px 20px 10px 20px;
+}
+.details-card,
+.top-module-card {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   position: relative;
   border-radius: 4px;
   background-color: #fff;
-  padding: 30px 20px 10px 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.details-card {
+  margin-top: 48px;
+  padding: 30px;
+}
+.details-card > h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 .top-module {
   position: absolute;
@@ -88,11 +100,14 @@ h2 {
 .w-20 {
   width: 20px;
 }
-.top-module > h2 {
+.top-module > .tab {
   background-color: white;
   padding: 5px 20px;
   border-radius: 8px;
+}
+.tab > h2 {
   font-size: x-large;
+  margin: 5px;
 }
 .coverage-stats-chip {
   border: solid 2px #555;
@@ -257,4 +272,10 @@ h2 {
 }
 .navigation > div > a:hover {
   color: #555;
+}
+.code-file-name {
+  font-family: monospace;
+  background-color: #eee;
+  padding: 5px;
+  border-radius: 4px;
 }
