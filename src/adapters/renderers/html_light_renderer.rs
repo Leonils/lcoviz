@@ -10,6 +10,8 @@ use crate::{
 use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
+const MODULE_SVG: &str = include_str!("resources/module.svg");
+const MODULE_MAIN_SVG: &str = include_str!("resources/module-main.svg");
 
 pub struct HtmlLightRenderer<TLinksComputer: LinksComputer> {
     links_computer: TLinksComputer,
@@ -172,6 +174,12 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             .with_child(
                 Div::new()
                     .with_class("tab")
+                    .with_child(Img::new(
+                        &self
+                            .links_computer
+                            .get_link_to_resource(root, current_page, "module.svg"),
+                        "Module icon",
+                    ))
                     .with_child(Text::h2(module.get_name()).with_class("code-file-name")),
             )
             .with_child(Div::new().with_class("fill"))
@@ -318,6 +326,23 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         let resources = resources_required_by_files.chain(resources_required_by_submodules);
         resources.collect::<Vec<(&str, &str)>>().into_iter()
     }
+
+    fn render_title_with_img(
+        &self,
+        root: &impl WithPath,
+        current: &impl WithPath,
+        icon_key: &str,
+    ) -> Div {
+        Div::new()
+            .with_class("title-with-image")
+            .with_child(Img::new(
+                &self
+                    .links_computer
+                    .get_link_to_resource(root, current, icon_key),
+                "File icon",
+            ))
+            .with_child(Text::h1(current.get_name()).with_class("code-file-name"))
+    }
 }
 
 impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksComputer> {
@@ -355,7 +380,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("top-module-card")
                     .with_class("header")
                     .with_child(root_top_module_div)
-                    .with_child(Text::h1(module.get_name()))
+                    .with_child(self.render_title_with_img(root, module, "module-main.svg"))
                     .with_child(self.render_navigation(root, module)),
             )
             .with_children(
@@ -389,19 +414,11 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                                 ))
                                 .with_child(Div::new().with_class("w-20")),
                         )
-                        .with_child(
-                            Div::new()
-                                .with_class("title-with-image")
-                                .with_child(Img::new(
-                                    &self.links_computer.get_link_to_resource(
-                                        root,
-                                        file,
-                                        self.get_icon_key(file).unwrap_or_default(),
-                                    ),
-                                    "File icon",
-                                ))
-                                .with_child(Text::h1(file.get_name()).with_class("code-file-name")),
-                        )
+                        .with_child(self.render_title_with_img(
+                            root,
+                            file,
+                            self.get_icon_key(file).unwrap_or_default(),
+                        ))
                         .with_child(self.render_navigation(root, file)),
                 )
                 .with_child(
@@ -422,7 +439,13 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         &self,
         root: &impl TestedContainer,
     ) -> impl Iterator<Item = (&str, &str)> {
-        self.get_resources_required_by_module(root)
-            .chain(vec![("html_light_renderer.css", DEFAULT_CSS)].into_iter())
+        self.get_resources_required_by_module(root).chain(
+            vec![
+                ("html_light_renderer.css", DEFAULT_CSS),
+                ("module.svg", MODULE_SVG),
+                ("module-main.svg", MODULE_MAIN_SVG),
+            ]
+            .into_iter(),
+        )
     }
 }

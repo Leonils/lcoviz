@@ -101,13 +101,19 @@ h2 {
   width: 20px;
 }
 .top-module > .tab {
+  display: flex;
   background-color: white;
   padding: 5px 20px;
   border-radius: 8px;
 }
+.tab > img {
+  width: 28px;
+  height: 28px;
+  margin: auto 10px auto 0;
+}
 .tab > h2 {
   font-size: x-large;
-  margin: 5px;
+  margin: auto 5px;
 }
 .coverage-stats-chip {
   border: solid 2px #555;
