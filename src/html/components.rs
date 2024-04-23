@@ -131,6 +131,7 @@ impl ToHtml for Pre {
 
 pub struct Div<'a> {
     class_names: Vec<String>,
+    id: Option<String>,
     children: Vec<Box<dyn ToHtml + 'a>>,
 }
 impl<'a> Div<'a> {
@@ -138,10 +139,15 @@ impl<'a> Div<'a> {
         Div {
             class_names: Vec::new(),
             children: Vec::new(),
+            id: None,
         }
     }
     pub fn with_class(mut self, class: &str) -> Self {
         self.class_names.push(class.to_string());
+        self
+    }
+    pub fn with_id(mut self, id: &str) -> Self {
+        self.id = Some(id.to_string());
         self
     }
     pub fn with_child(mut self, child: impl ToHtml + 'a) -> Self {
@@ -168,9 +174,13 @@ impl<'a> ToHtml for Div<'a> {
             0 => String::new(),
             _ => format!(" class=\"{}\"", self.class_names.join(" ")),
         };
+        let id_attr = match &self.id {
+            Some(id) => format!(" id=\"{}\"", id),
+            None => String::new(),
+        };
         let children_html: String = self.children.iter().map(|c| c.to_html()).collect();
 
-        format!("<div{}>{}</div>", class_attr, children_html)
+        format!("<div{}{}>{}</div>", class_attr, id_attr, children_html)
     }
 }
 
@@ -238,12 +248,14 @@ impl<'a> ToHtml for Table<'a> {
 pub struct Gauge {
     percentage: Option<f32>,
     title: String,
+    link_to: Option<String>,
 }
 impl Gauge {
-    pub fn new(percentage: Option<f32>, title: &str) -> Self {
+    pub fn new(percentage: Option<f32>, title: &str, link_to: Option<&str>) -> Self {
         Gauge {
             percentage,
             title: title.to_string(),
+            link_to: link_to.map(|s| s.to_string()),
         }
     }
 }
@@ -255,7 +267,11 @@ impl ToHtml for Gauge {
             self.percentage.unwrap_or(0.0) / 200.,
             self.percentage
                 .map_or("-".to_string(), |p| format!("{:.2}%", p)),
-            self.title
+            if let Some(link_to) = &self.link_to {
+                Link::from_text(link_to, &self.title).to_html()
+            } else {
+                self.title.to_string()
+            }
         )
     }
 }
@@ -372,6 +388,12 @@ mod tests {
     fn div_with_direct_text_shall_render() {
         let div = Div::new().with_class("my-class").with_text("Hello, World!");
         assert_eq!(div.to_html(), "<div class=\"my-class\">Hello, World!</div>");
+    }
+
+    #[test]
+    fn div_with_id_shall_render() {
+        let div = Div::new().with_id("my-id");
+        assert_eq!(div.to_html(), "<div id=\"my-id\"></div>");
     }
 
     #[test]
@@ -506,7 +528,7 @@ mod tests {
 
     #[test]
     fn gauge_shall_render() {
-        let gauge = Gauge::new(Some(50.145), "Example");
+        let gauge = Gauge::new(Some(50.145), "Example", None);
         assert_eq!(
             gauge.to_html(),
             r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</h1></div></div><div>Example</div></div>"#
@@ -515,10 +537,19 @@ mod tests {
 
     #[test]
     fn gauge_with_none_shall_render() {
-        let gauge = Gauge::new(None, "Example");
+        let gauge = Gauge::new(None, "Example", None);
         assert_eq!(
             gauge.to_html(),
             r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-none" style="transform: rotate(0.00turn)"></div><div class="gauge-data"><span class="percent">-</h1></div></div><div>Example</div></div>"#
+        );
+    }
+
+    #[test]
+    fn gauche_with_link_shall_render() {
+        let gauge = Gauge::new(Some(50.145), "Example", Some("#lines"));
+        assert_eq!(
+            gauge.to_html(),
+            r##"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</h1></div></div><div><a href="#lines">Example</a></div></div>"##
         );
     }
 }

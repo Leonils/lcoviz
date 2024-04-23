@@ -68,7 +68,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         .into_iter()
     }
 
-    fn render_gauges(&self, coverage: &crate::core::AggregatedCoverage) -> Div {
+    fn render_gauges(
+        &self,
+        coverage: &crate::core::AggregatedCoverage,
+        add_link_to_section: bool,
+    ) -> Div {
         let lines_percentage = coverage.lines.percentage();
         let functions_percentage = coverage.functions.percentage();
         let branches_percentage = coverage.branches.percentage();
@@ -81,6 +85,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     "Lines {}/{}",
                     coverage.lines.covered_count, coverage.lines.count
                 ),
+                if add_link_to_section {
+                    Some("#lines")
+                } else {
+                    None
+                },
             ))
             .with_child(Gauge::new(
                 functions_percentage,
@@ -88,6 +97,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     "Functions {}/{}",
                     coverage.functions.covered_count, coverage.functions.count
                 ),
+                if add_link_to_section {
+                    Some("#functions")
+                } else {
+                    None
+                },
             ))
             .with_child(Gauge::new(
                 branches_percentage,
@@ -95,6 +109,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     "Branches {}/{}",
                     coverage.branches.covered_count, coverage.branches.count
                 ),
+                None,
             ))
     }
 
@@ -447,7 +462,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 .with_class("header")
                 .with_child(self.render_title_with_img(root, module, "module-main.svg"))
                 .with_child(self.render_navigation(root, module))
-                .with_child(self.render_gauges(module.get_aggregated_coverage())),
+                .with_child(self.render_gauges(module.get_aggregated_coverage(), false)),
         );
         if module.get_code_file_children().count() > 0 {
             main = main.with_child(
@@ -485,11 +500,12 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         self.get_icon_key(file).unwrap_or_default(),
                     ))
                     .with_child(self.render_navigation(root, file))
-                    .with_child(self.render_gauges(file.get_aggregated_coverage())),
+                    .with_child(self.render_gauges(file.get_aggregated_coverage(), true)),
             )
             .with_child(
                 Div::new()
                     .with_class("details-card")
+                    .with_id("lines")
                     .with_child(Text::h2("Lines"))
                     .with_child(
                         Div::new()
@@ -500,6 +516,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             .with_child(
                 Div::new()
                     .with_class("details-card")
+                    .with_id("functions")
                     .with_child(Text::h2("Functions"))
                     .with_child(Div::new().with_class("functions"))
                     .with_child(self.render_functions(root, file)),
