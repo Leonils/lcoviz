@@ -357,38 +357,32 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
             .with_child(Div::new().with_class("w-20"));
 
-        let top_level_code_files = Div::new()
-            .with_class("top-module-card")
-            .with_child(
-                Div::new().with_class("top-module").with_child(
-                    Div::new()
-                        .with_class("tab")
-                        .with_child(Text::h2("Top level code files")),
-                ),
-            )
-            .with_child(
-                Div::new().with_class("module-children").with_children(
-                    module
-                        .get_code_file_children()
-                        .map(|file| self.render_file_row(root, module, file)),
-                ),
-            );
+        let top_level_code_files = module
+            .get_code_file_children()
+            .map(|file| self.render_file_row(root, module, file));
 
-        let main = Div::new()
-            .with_child(
-                Div::new()
-                    .with_class("top-module-card")
-                    .with_class("header")
-                    .with_child(root_top_module_div)
-                    .with_child(self.render_title_with_img(root, module, "module-main.svg"))
-                    .with_child(self.render_navigation(root, module)),
+        let mut main = Div::new().with_child(
+            Div::new()
+                .with_class("top-module-card")
+                .with_class("header")
+                .with_child(root_top_module_div)
+                .with_child(self.render_title_with_img(root, module, "module-main.svg"))
+                .with_child(self.render_navigation(root, module)),
+        );
+        if module.get_code_file_children().count() > 0 {
+            main = main.with_child(
+                Div::new().with_class("top-files-card").with_child(
+                    Div::new()
+                        .with_class("module-children")
+                        .with_children(top_level_code_files),
+                ),
             )
-            .with_children(
-                module
-                    .get_container_children()
-                    .map(|submodule| self.render_top_module_row(root, module, submodule)),
-            )
-            .with_child(top_level_code_files);
+        }
+        main = main.with_children(
+            module
+                .get_container_children()
+                .map(|submodule| self.render_top_module_row(root, module, submodule)),
+        );
 
         return self.render_layout(root, module, main.to_html());
     }

@@ -71,8 +71,13 @@ h2 {
   margin-top: 56px;
   padding: 30px 20px 10px 20px;
 }
+.top-files-card {
+  margin-bottom: 100px;
+  padding: 30px 20px 10px 20px;
+}
 .details-card,
-.top-module-card {
+.top-module-card,
+.top-files-card {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   position: relative;
   border-radius: 4px;
