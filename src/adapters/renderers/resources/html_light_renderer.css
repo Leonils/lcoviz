@@ -12,6 +12,17 @@ h2 {
   font-size: xx-large;
   margin: 10px 40px 10px 0;
 }
+.title-with-image {
+  display: flex;
+}
+.title-with-image > img {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+.title-with-image > h1 {
+  margin: auto 20px;
+}
 .responsive-container {
   max-width: 1200px;
   margin: 100px auto;
@@ -230,7 +241,7 @@ h2 {
 }
 .navigation {
   display: flex;
-  margin: 20px 20px;
+  margin: 20px 0px;
 }
 .navigation > div {
   margin-right: 10px;

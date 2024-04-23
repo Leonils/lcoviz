@@ -383,7 +383,19 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                                 ))
                                 .with_child(Div::new().with_class("w-20")),
                         )
-                        .with_child(Text::h1(file.get_name()))
+                        .with_child(
+                            Div::new()
+                                .with_class("title-with-image")
+                                .with_child(Img::new(
+                                    &self.links_computer.get_link_to_resource(
+                                        root,
+                                        file,
+                                        self.get_icon_key(file).unwrap_or_default(),
+                                    ),
+                                    "File icon",
+                                ))
+                                .with_child(Text::h1(file.get_name())),
+                        )
                         .with_child(self.render_navigation(root, file)),
                 )
                 .with_child(
