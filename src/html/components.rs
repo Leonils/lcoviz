@@ -235,6 +235,30 @@ impl<'a> ToHtml for Table<'a> {
     }
 }
 
+pub struct Gauge {
+    percentage: Option<f32>,
+    title: String,
+}
+impl Gauge {
+    pub fn new(percentage: Option<f32>, title: &str) -> Self {
+        Gauge {
+            percentage,
+            title: title.to_string(),
+        }
+    }
+}
+impl ToHtml for Gauge {
+    fn to_html(&self) -> String {
+        format!(
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c" style="transform: rotate({:.2}turn)"></div><div class="gauge-data"><span class="percent">{}</h1></div></div><div>{}</div></div>"#,
+            self.percentage.unwrap_or(0.0) / 200.,
+            self.percentage
+                .map_or("-".to_string(), |p| format!("{:.2}%", p)),
+            self.title
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -476,6 +500,24 @@ mod tests {
         assert_eq!(
             table.to_html(),
             "<table><tr><td>r1c1</td><td>r1c2</td></tr><tr><td>r2c1</td><td>r2c2</td></tr></table>"
+        );
+    }
+
+    #[test]
+    fn gauge_shall_render() {
+        let gauge = Gauge::new(Some(50.145), "Example");
+        assert_eq!(
+            gauge.to_html(),
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</h1></div></div><div>Example</div></div>"#
+        );
+    }
+
+    #[test]
+    fn gauge_with_none_shall_render() {
+        let gauge = Gauge::new(None, "Example");
+        assert_eq!(
+            gauge.to_html(),
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c" style="transform: rotate(0.00turn)"></div><div class="gauge-data"><span class="percent">-</h1></div></div><div>Example</div></div>"#
         );
     }
 }

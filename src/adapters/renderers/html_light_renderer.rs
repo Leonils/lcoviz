@@ -4,12 +4,13 @@ use crate::{
     adapters::renderers::common::render_optional_percentage,
     core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::components::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
+    html::components::{Div, Gauge, Img, Link, Pre, Row, Table, Text, ToHtml},
 };
 
 use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
+const GAUGE_CSS: &str = include_str!("resources/gauge.css");
 const MODULE_SVG: &str = include_str!("resources/module.svg");
 const MODULE_MAIN_SVG: &str = include_str!("resources/module-main.svg");
 
@@ -62,6 +63,36 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             self.render_aggregated_counter_chip("branches", &coverage.branches),
         ]
         .into_iter()
+    }
+
+    fn render_gauges(&self, coverage: &crate::core::AggregatedCoverage) -> Div {
+        let lines_percentage = coverage.lines.percentage();
+        let functions_percentage = coverage.functions.percentage();
+        let branches_percentage = coverage.branches.percentage();
+
+        Div::new()
+            .with_class("gauges")
+            .with_child(Gauge::new(
+                lines_percentage,
+                &format!(
+                    "Lines {}/{}",
+                    coverage.lines.covered_count, coverage.lines.count
+                ),
+            ))
+            .with_child(Gauge::new(
+                functions_percentage,
+                &format!(
+                    "Functions {}/{}",
+                    coverage.functions.covered_count, coverage.functions.count
+                ),
+            ))
+            .with_child(Gauge::new(
+                branches_percentage,
+                &format!(
+                    "Branches {}/{}",
+                    coverage.branches.covered_count, coverage.branches.count
+                ),
+            ))
     }
 
     fn render_aggregated_counters(
@@ -271,6 +302,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     <head>
         <title>Coverage report</title>
         <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
+        <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
     </head>
     <body>
         <main class=\"responsive-container\">
@@ -280,6 +312,8 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 </html>",
             self.links_computer
                 .get_link_to_resource(root, current, "html_light_renderer.css"),
+            self.links_computer
+                .get_link_to_resource(root, current, "gauge.css"),
             content,
         );
     }
@@ -371,7 +405,8 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 .with_class("header")
                 .with_child(root_top_module_div)
                 .with_child(self.render_title_with_img(root, module, "module-main.svg"))
-                .with_child(self.render_navigation(root, module)),
+                .with_child(self.render_navigation(root, module))
+                .with_child(self.render_gauges(module.get_aggregated_coverage())),
         );
         if module.get_code_file_children().count() > 0 {
             main = main.with_child(
@@ -398,37 +433,28 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         file_provider: &impl FileLinesProvider,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
-        let main =
-            Div::new()
-                .with_child(
-                    Div::new()
-                        .with_class("top-module-card")
-                        .with_child(
-                            Div::new()
-                                .with_class("top-module")
-                                .with_child(Div::new().with_class("fill"))
-                                .with_children(self.render_aggregated_coverage_chips(
-                                    file.get_aggregated_coverage(),
-                                ))
-                                .with_child(Div::new().with_class("w-20")),
-                        )
-                        .with_child(self.render_title_with_img(
-                            root,
-                            file,
-                            self.get_icon_key(file).unwrap_or_default(),
-                        ))
-                        .with_child(self.render_navigation(root, file)),
-                )
-                .with_child(
-                    Div::new()
-                        .with_class("details-card")
-                        .with_child(Text::h2("Lines"))
-                        .with_child(
-                            Div::new()
-                                .with_class("lines")
-                                .with_child(Self::render_lines(file, lines)),
-                        ),
-                );
+        let main = Div::new()
+            .with_child(
+                Div::new()
+                    .with_class("top-module-card")
+                    .with_child(self.render_title_with_img(
+                        root,
+                        file,
+                        self.get_icon_key(file).unwrap_or_default(),
+                    ))
+                    .with_child(self.render_navigation(root, file))
+                    .with_child(self.render_gauges(file.get_aggregated_coverage())),
+            )
+            .with_child(
+                Div::new()
+                    .with_class("details-card")
+                    .with_child(Text::h2("Lines"))
+                    .with_child(
+                        Div::new()
+                            .with_class("lines")
+                            .with_child(Self::render_lines(file, lines)),
+                    ),
+            );
 
         self.render_layout(root, file, main.to_html())
     }
@@ -440,6 +466,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         self.get_resources_required_by_module(root).chain(
             vec![
                 ("html_light_renderer.css", DEFAULT_CSS),
+                ("gauge.css", GAUGE_CSS),
                 ("module.svg", MODULE_SVG),
                 ("module-main.svg", MODULE_MAIN_SVG),
             ]
