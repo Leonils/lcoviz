@@ -40,6 +40,9 @@ h2 {
   display: flex;
   justify-content: space-between;
 }
+.file-row .coverage-stats {
+  opacity: 0.8;
+}
 .module-row {
   font-weight: bold;
   background-color: #ccc;
