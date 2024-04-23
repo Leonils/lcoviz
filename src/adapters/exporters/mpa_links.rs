@@ -32,7 +32,16 @@ impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
         match self.file_system.is_dir(&file.get_path()) {
             true => root.get_path_relative_to(&file.get_path()),
             false => {
-                diff_paths(&root.get_path(), &file.get_path().parent().unwrap()).unwrap_or_default()
+                let file_path = file.get_path();
+                let parent_path = file_path.parent().expect(
+                    format!(
+                        "File '{}', '{}' has no parent",
+                        file.get_path_string(),
+                        file.get_name()
+                    )
+                    .as_str(),
+                );
+                diff_paths(&root.get_path(), &parent_path).unwrap_or_default()
             }
         }
     }
