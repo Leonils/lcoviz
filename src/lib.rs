@@ -1,6 +1,7 @@
 pub mod file_provider;
 
 pub mod html {
+    pub mod colors;
     pub mod components;
 }
 
@@ -20,7 +21,6 @@ pub mod core;
 
 pub mod adapters {
     pub mod renderers {
-        mod common;
         pub mod html_light_renderer;
 
         #[cfg(test)]

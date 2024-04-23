@@ -1,16 +1,17 @@
 use std::include_str;
 
 use crate::{
-    adapters::renderers::common::render_optional_percentage,
     core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::FileLinesProvider,
-    html::components::{Div, Gauge, Img, Link, Pre, Row, Table, Text, ToHtml},
+    html::{
+        colors::{get_percentage_class, render_optional_percentage},
+        components::{Div, Gauge, Img, Link, Pre, Row, Table, Text, ToHtml},
+    },
 };
-
-use super::common::get_percentage_class;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 const GAUGE_CSS: &str = include_str!("resources/gauge.css");
+const COLORS_CSS: &str = include_str!("resources/colors.css");
 const MODULE_SVG: &str = include_str!("resources/module.svg");
 const MODULE_MAIN_SVG: &str = include_str!("resources/module-main.svg");
 
@@ -29,8 +30,8 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         counter: &crate::core::AggregatedCoverageCounters,
     ) -> Div {
         let percentage = counter.percentage();
-        let percentage_class = get_percentage_class("percentage", &percentage);
-        let percentage_chip_class = get_percentage_class("chip", &percentage);
+        let percentage_class = get_percentage_class("bg", &percentage);
+        let percentage_chip_class = get_percentage_class("border", &percentage);
 
         let div = Div::new()
             .with_class("coverage-stats-chip")
@@ -100,7 +101,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         counters: &crate::core::AggregatedCoverageCounters,
     ) -> Vec<Div> {
         let percentage = counters.percentage();
-        let percentage_class = get_percentage_class("percentage", &percentage);
+        let percentage_class = get_percentage_class("bg", &percentage);
 
         vec![
             Div::new()
@@ -303,6 +304,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         <title>Coverage report</title>
         <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
         <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
+        <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
     </head>
     <body>
         <main class=\"responsive-container\">
@@ -314,6 +316,8 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .get_link_to_resource(root, current, "html_light_renderer.css"),
             self.links_computer
                 .get_link_to_resource(root, current, "gauge.css"),
+            self.links_computer
+                .get_link_to_resource(root, current, "colors.css"),
             content,
         );
     }
@@ -389,12 +393,6 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         root: &impl WithPath,
         module: &impl TestedContainer,
     ) -> String {
-        let root_top_module_div = Div::new()
-            .with_class("top-module")
-            .with_child(Div::new().with_class("fill"))
-            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
-            .with_child(Div::new().with_class("w-20"));
-
         let top_level_code_files = module
             .get_code_file_children()
             .map(|file| self.render_file_row(root, module, file));
@@ -403,7 +401,6 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             Div::new()
                 .with_class("top-module-card")
                 .with_class("header")
-                .with_child(root_top_module_div)
                 .with_child(self.render_title_with_img(root, module, "module-main.svg"))
                 .with_child(self.render_navigation(root, module))
                 .with_child(self.render_gauges(module.get_aggregated_coverage())),
@@ -467,6 +464,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             vec![
                 ("html_light_renderer.css", DEFAULT_CSS),
                 ("gauge.css", GAUGE_CSS),
+                ("colors.css", COLORS_CSS),
                 ("module.svg", MODULE_SVG),
                 ("module-main.svg", MODULE_MAIN_SVG),
             ]
