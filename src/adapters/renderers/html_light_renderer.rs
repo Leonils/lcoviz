@@ -244,14 +244,17 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         )
     }
 
-    fn render_layout(content: String) -> String {
+    fn render_layout(
+        &self,
+        root: &impl WithPath,
+        current: &impl WithPath,
+        content: String,
+    ) -> String {
         return format!(
             "<html>
     <head>
         <title>Coverage report</title>
-        <style type=\"text/css\">
-            {}
-        </style>
+        <link rel=\"stylesheet\" type=\"text/css\" href=\"{}\">
     </head>
     <body>
         <main class=\"responsive-container\">
@@ -259,7 +262,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         </main>
     </body>
 </html>",
-            DEFAULT_CSS, content,
+            self.links_computer
+                .get_link_to_resource(root, current, "html_light_renderer.css"),
+            content,
         );
     }
 
@@ -354,7 +359,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
             )
             .with_child(top_level_code_files);
 
-        return Self::render_layout(main.to_html());
+        return self.render_layout(root, module, main.to_html());
     }
 
     fn render_file_coverage_details(
@@ -392,7 +397,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         ),
                 );
 
-        Self::render_layout(main.to_html())
+        self.render_layout(root, file, main.to_html())
     }
 
     fn get_required_resources(
@@ -400,5 +405,6 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
         root: &impl TestedContainer,
     ) -> impl Iterator<Item = (&str, &str)> {
         self.get_resources_required_by_module(root)
+            .chain(vec![("html_light_renderer.css", DEFAULT_CSS)].into_iter())
     }
 }
