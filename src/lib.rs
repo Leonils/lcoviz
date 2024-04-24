@@ -22,6 +22,7 @@ pub mod core;
 
 pub mod adapters {
     pub mod renderers {
+        mod file_icon;
         pub mod html_light_renderer;
 
         #[cfg(test)]

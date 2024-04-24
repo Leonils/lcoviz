@@ -1,13 +1,18 @@
 use std::include_str;
 
 use crate::{
-    core::{LinksComputer, Renderer, TestedContainer, TestedFile, WithPath},
+    core::{
+        AggregatedCoverage, AggregatedCoverageCounters, LinksComputer, Renderer, TestedContainer,
+        TestedFile, WithPath,
+    },
     file_provider::FileLinesProvider,
     html::{
         colors::{get_percentage_class, render_optional_percentage},
         components::{Div, Gauge, Img, Link, Pre, Row, Table, Text, ToHtml},
     },
 };
+
+use super::file_icon::FileIcon;
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 const GAUGE_CSS: &str = include_str!("resources/gauge.css");
@@ -29,7 +34,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     fn render_aggregated_counter_chip(
         &self,
         name: &str,
-        counter: &crate::core::AggregatedCoverageCounters,
+        counter: &AggregatedCoverageCounters,
     ) -> Div {
         let percentage = counter.percentage();
         let percentage_class = get_percentage_class("bg", &percentage);
@@ -58,7 +63,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 
     fn render_aggregated_coverage_chips(
         &self,
-        coverage: &crate::core::AggregatedCoverage,
+        coverage: &AggregatedCoverage,
     ) -> impl Iterator<Item = Div> {
         vec![
             self.render_aggregated_counter_chip("lines", &coverage.lines),
@@ -68,11 +73,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         .into_iter()
     }
 
-    fn render_gauges(
-        &self,
-        coverage: &crate::core::AggregatedCoverage,
-        add_link_to_section: bool,
-    ) -> Div {
+    fn render_gauges(&self, coverage: &AggregatedCoverage, add_link_to_section: bool) -> Div {
         let lines_percentage = coverage.lines.percentage();
         let functions_percentage = coverage.functions.percentage();
         let branches_percentage = coverage.branches.percentage();
@@ -113,10 +114,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             ))
     }
 
-    fn render_aggregated_counters(
-        &self,
-        counters: &crate::core::AggregatedCoverageCounters,
-    ) -> Vec<Div> {
+    fn render_aggregated_counters(&self, counters: &AggregatedCoverageCounters) -> Vec<Div> {
         let percentage = counters.percentage();
         let percentage_class = get_percentage_class("bg", &percentage);
 
@@ -134,7 +132,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 
     fn render_aggregated_coverage(
         &self,
-        coverage: &crate::core::AggregatedCoverage,
+        coverage: &AggregatedCoverage,
     ) -> impl Iterator<Item = Div> {
         vec![
             self.render_aggregated_counters(&coverage.lines),
@@ -155,7 +153,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         let img_src = self.links_computer.get_link_to_resource(
             root,
             current_page,
-            self.get_icon_key(file).unwrap_or_default(),
+            FileIcon::get_icon_key(file).unwrap_or_default(),
         );
 
         Div::new().with_child(
@@ -258,7 +256,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_line(line_number: u32, file: &impl crate::core::TestedFile, line: String) -> Row {
+    fn render_line(line_number: u32, file: &impl TestedFile, line: String) -> Row {
         let coverage = file.get_line_coverage(line_number as u32);
 
         let class = match coverage {
@@ -276,7 +274,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             .with_cell(Pre::new(&line))
     }
 
-    fn render_lines(file: &impl crate::core::TestedFile, lines: Vec<String>) -> Table {
+    fn render_lines(file: &impl TestedFile, lines: Vec<String>) -> Table {
         let rows = lines
             .iter()
             .enumerate()
@@ -285,7 +283,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         Table::new().with_rows(rows)
     }
 
-    fn render_functions(&self, root: &impl WithPath, file: &impl crate::core::TestedFile) -> Div {
+    fn render_functions(&self, root: &impl WithPath, file: &impl TestedFile) -> Div {
         let functions = file.get_functions();
 
         let covered_svg =
@@ -381,40 +379,13 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         );
     }
 
-    fn get_icon_key(&self, file: &impl TestedFile) -> Option<&str> {
-        match file
-            .get_path()
-            .extension()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-        {
-            "rs" => Some("rust.svg"),
-            "dart" => Some("dart.svg"),
-            _ => None,
-        }
-    }
-    fn get_resources_required_by_file(&self, file: &impl TestedFile) -> Option<(&str, &str)> {
-        match file
-            .get_path()
-            .extension()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-        {
-            "rs" => Some(("rust.svg", include_str!("resources/rust.svg"))),
-            "dart" => Some(("dart.svg", include_str!("resources/dart.svg"))),
-            _ => None,
-        }
-    }
-
     fn get_resources_required_by_module(
         &self,
         module: &impl TestedContainer,
     ) -> impl Iterator<Item = (&str, &str)> {
         let resources_required_by_files = module
             .get_code_file_children()
-            .map(|file| self.get_resources_required_by_file(file))
+            .map(|file| FileIcon::get_resources_required_by_file(file))
             .flatten()
             .into_iter();
 
@@ -485,7 +456,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
     fn render_file_coverage_details(
         &self,
         root: &impl WithPath,
-        file: &impl crate::core::TestedFile,
+        file: &impl TestedFile,
         file_provider: &impl FileLinesProvider,
     ) -> String {
         let lines = file_provider.get_file_lines().unwrap();
@@ -497,7 +468,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_child(self.render_title_with_img(
                         root,
                         file,
-                        self.get_icon_key(file).unwrap_or_default(),
+                        FileIcon::get_icon_key(file).unwrap_or_default(),
                     ))
                     .with_child(self.render_navigation(root, file))
                     .with_child(self.render_gauges(file.get_aggregated_coverage(), true)),
@@ -518,8 +489,11 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("details-card")
                     .with_id("functions")
                     .with_child(Text::h2("Functions"))
-                    .with_child(Div::new().with_class("functions"))
-                    .with_child(self.render_functions(root, file)),
+                    .with_child(
+                        Div::new()
+                            .with_class("functions")
+                            .with_child(self.render_functions(root, file)),
+                    ),
             );
 
         self.render_layout(root, file, main.to_html())
