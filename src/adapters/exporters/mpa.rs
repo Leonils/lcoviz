@@ -1,21 +1,22 @@
 use std::{error::Error, path::PathBuf};
 
 use crate::{
-    aggregation::tested_root::TestedRoot,
     core::{Exporter, FileSystem, Renderer, TestedContainer, TestedFile, WithPath},
     file_provider::LocalFileLinesProvider,
 };
 
-pub struct MpaExporter<'a, TRenderer: Renderer, TFileSystem: FileSystem> {
+pub struct MpaExporter<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer> {
     renderer: TRenderer,
-    root: TestedRoot,
+    root: TRoot,
     output_path_root: PathBuf,
     file_system: &'a TFileSystem,
 }
-impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer, TFileSystem> {
+impl<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer>
+    MpaExporter<'a, TRenderer, TFileSystem, TRoot>
+{
     pub fn new(
         renderer: TRenderer,
-        root: TestedRoot,
+        root: TRoot,
         output_path_root: PathBuf,
         file_system: &'a TFileSystem,
     ) -> Self {
@@ -78,8 +79,8 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
     }
 }
 
-impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> Exporter
-    for MpaExporter<'a, TRenderer, TFileSystem>
+impl<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer> Exporter
+    for MpaExporter<'a, TRenderer, TFileSystem, TRoot>
 {
     fn render_root(self) -> () {
         self.render_module(&self.root, &self.root).expect(&format!(

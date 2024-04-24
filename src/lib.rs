@@ -8,6 +8,7 @@ pub mod html {
 pub mod aggregation {
     mod aggregated;
     pub mod input;
+    pub mod multi_report;
     mod tested_file;
     mod tested_module;
     pub mod tested_root;

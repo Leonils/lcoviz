@@ -55,27 +55,31 @@ impl TestedRoot {
 
     fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue, prefix: &str) {
         let file = TestedCodeFile::from_section(section_key, section_value, prefix, &self.key);
-        let section_path = file
-            .get_path()
-            // .get_path_relative_to(&self.prefix)
+        let path_relative_to_root = file
+            .get_path_relative_to(&self.get_path())
             .components()
             .filter(|c| c.as_os_str() != "/")
             .map(|c| c.as_os_str().to_str().unwrap().to_string())
             .collect::<Vec<String>>();
 
-        if section_path.is_empty() {
+        if path_relative_to_root.is_empty() {
             println!("Empty path");
             return;
         }
 
         self.aggregated.add(&file.get_aggregated_coverage());
-        if section_path.len() == 1 {
+        if path_relative_to_root.len() == 1 {
             self.source_files.push(file);
             return;
         }
 
-        let module_name = section_path[0].clone();
-        let module_path_queue = section_path[1..section_path.len() - 1].to_vec();
+        let module_name = path_relative_to_root[0].clone();
+        let module_path_queue = path_relative_to_root[1..path_relative_to_root.len() - 1].to_vec();
+
+        println!(
+            "module_path_queue: {:?}, module_name: {:?}, path_relative: {:?}",
+            module_path_queue, module_name, path_relative_to_root
+        );
 
         let target_module = match self.find_module_by_name(&module_name) {
             Some(existing_module) => existing_module,

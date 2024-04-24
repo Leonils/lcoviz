@@ -107,6 +107,10 @@ impl AggregatorInput {
     pub fn get_key(&self) -> &str {
         &self.key
     }
+
+    pub fn last_part_of_prefix(&self) -> &str {
+        self.prefix.split('/').last().unwrap_or("")
+    }
 }
 
 #[cfg(test)]
