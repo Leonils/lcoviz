@@ -27,6 +27,7 @@ pub mod adapters {
 
         pub mod components {
             pub mod chip;
+            pub mod gauges;
         }
 
         #[cfg(test)]

@@ -262,7 +262,7 @@ impl Gauge {
 impl ToHtml for Gauge {
     fn to_html(&self) -> String {
         format!(
-            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c {}" style="transform: rotate({:.2}turn)"></div><div class="gauge-data"><span class="percent">{}</h1></div></div><div>{}</div></div>"#,
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c {}" style="transform: rotate({:.2}turn)"></div><div class="gauge-data"><span class="percent">{}</span></div></div><div>{}</div></div>"#,
             get_percentage_class("bg", &self.percentage),
             self.percentage.unwrap_or(0.0) / 200.,
             self.percentage
@@ -531,7 +531,7 @@ mod tests {
         let gauge = Gauge::new(Some(50.145), "Example", None);
         assert_eq!(
             gauge.to_html(),
-            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</h1></div></div><div>Example</div></div>"#
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</span></div></div><div>Example</div></div>"#
         );
     }
 
@@ -540,7 +540,7 @@ mod tests {
         let gauge = Gauge::new(None, "Example", None);
         assert_eq!(
             gauge.to_html(),
-            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-none" style="transform: rotate(0.00turn)"></div><div class="gauge-data"><span class="percent">-</h1></div></div><div>Example</div></div>"#
+            r#"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-none" style="transform: rotate(0.00turn)"></div><div class="gauge-data"><span class="percent">-</span></div></div><div>Example</div></div>"#
         );
     }
 
@@ -549,7 +549,7 @@ mod tests {
         let gauge = Gauge::new(Some(50.145), "Example", Some("#lines"));
         assert_eq!(
             gauge.to_html(),
-            r##"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</h1></div></div><div><a href="#lines">Example</a></div></div>"##
+            r##"<div class="gauge"><div class="container"><div class="gauge-a"></div><div class="gauge-b"></div><div class="gauge-c bg-5" style="transform: rotate(0.25turn)"></div><div class="gauge-data"><span class="percent">50.15%</span></div></div><div><a href="#lines">Example</a></div></div>"##
         );
     }
 }

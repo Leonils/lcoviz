@@ -8,11 +8,14 @@ use crate::{
     file_provider::FileLinesProvider,
     html::{
         colors::{get_percentage_class, render_optional_percentage},
-        components::{Div, Gauge, Img, Link, Pre, Row, Table, Text, ToHtml},
+        components::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
     },
 };
 
-use super::{components::chip::render_aggregated_coverage_chips, file_icon::FileIcon};
+use super::{
+    components::{chip::render_aggregated_coverage_chips, gauges::CoverageGauges},
+    file_icon::FileIcon,
+};
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 const GAUGE_CSS: &str = include_str!("resources/gauge.css");
@@ -29,35 +32,6 @@ pub struct HtmlLightRenderer<TLinksComputer: LinksComputer> {
 impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     pub fn new(links_computer: TLinksComputer) -> Self {
         HtmlLightRenderer { links_computer }
-    }
-
-    fn render_gauge(
-        counter: &AggregatedCoverageCounters,
-        name: &str,
-        add_link_to_section: bool,
-    ) -> Gauge {
-        let link = format!("#{}", name.to_lowercase());
-        Gauge::new(
-            counter.percentage(),
-            &format!("{} {}/{}", name, counter.covered_count, counter.count),
-            if add_link_to_section {
-                Some(&link)
-            } else {
-                None
-            },
-        )
-    }
-
-    fn render_gauges(&self, coverage: &AggregatedCoverage, with_link: bool) -> Div {
-        Div::new()
-            .with_class("gauges")
-            .with_child(Self::render_gauge(&coverage.lines, "Lines", with_link))
-            .with_child(Self::render_gauge(
-                &coverage.functions,
-                "Functions",
-                with_link,
-            ))
-            .with_child(Self::render_gauge(&coverage.branches, "Branches", false))
     }
 
     fn render_aggregated_counters(&self, counters: &AggregatedCoverageCounters) -> Vec<Div> {
@@ -389,7 +363,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 .with_class("header")
                 .with_child(self.render_title_with_img(root, module, "module-main.svg"))
                 .with_child(self.render_navigation(root, module))
-                .with_child(self.render_gauges(module.get_aggregated_coverage(), false)),
+                .with_child(CoverageGauges::new(module.get_aggregated_coverage(), true)),
         );
         if module.get_code_file_children().count() > 0 {
             main = main.with_child(
@@ -427,7 +401,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         FileIcon::get_icon_key(file).unwrap_or_default(),
                     ))
                     .with_child(self.render_navigation(root, file))
-                    .with_child(self.render_gauges(file.get_aggregated_coverage(), true)),
+                    .with_child(CoverageGauges::new(file.get_aggregated_coverage(), true)),
             )
             .with_child(
                 Div::new()
