@@ -8,6 +8,7 @@ use super::{input::AggregatorInput, tested_file::TestedCodeFile, tested_module::
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedRoot {
+    name: String,
     modules: Vec<TestedModule>,
     source_files: Vec<TestedCodeFile>,
     aggregated: AggregatedCoverage,
@@ -16,9 +17,18 @@ pub struct TestedRoot {
 
 impl TestedRoot {
     pub fn new(args: AggregatorInput) -> Self {
+        let prefix_path = PathBuf::from(args.get_prefix());
+        let name = prefix_path
+            .components()
+            .last()
+            .map(|c| c.as_os_str().to_str())
+            .flatten()
+            .unwrap_or("Test report");
+
         let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
-            prefix: PathBuf::from(args.get_prefix()),
+            prefix: prefix_path.to_owned(),
+            name: name.to_string(),
             ..Default::default()
         };
 
@@ -103,7 +113,7 @@ impl TestedContainer for TestedRoot {
 
 impl WithPath for TestedRoot {
     fn get_name(&self) -> &str {
-        "Test report"
+        &self.name
     }
 
     fn get_path_string(&self) -> String {
@@ -119,6 +129,7 @@ impl TestedRoot {
             modules: vec![],
             source_files,
             prefix: PathBuf::from(""),
+            name: "Test report".to_string(),
         }
     }
 
@@ -128,6 +139,7 @@ impl TestedRoot {
             modules,
             source_files: vec![],
             prefix: PathBuf::from(""),
+            name: "Test report".to_string(),
         }
     }
 
@@ -140,6 +152,7 @@ impl TestedRoot {
             modules,
             source_files,
             prefix: PathBuf::from(""),
+            name: "Test report".to_string(),
         }
     }
 
@@ -170,7 +183,13 @@ mod test {
     fn when_building_tree_with_an_empty_report_it_should_get_an_empty_report() {
         let original_report = LcovReport::new();
         let report_tree = TestedRoot::from_original_report(original_report);
-        assert_eq!(TestedRoot::default(), report_tree);
+        assert_eq!(
+            TestedRoot {
+                name: "Test report".to_string(),
+                ..TestedRoot::default()
+            },
+            report_tree
+        );
     }
 
     #[test]

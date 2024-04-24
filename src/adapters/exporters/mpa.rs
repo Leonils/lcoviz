@@ -104,7 +104,8 @@ mod test {
 
     use crate::{
         adapters::renderers::mock_renderer::MockRenderer,
-        aggregation::fixtures::AggregatedFixtures, core::MockFileSystem,
+        aggregation::{fixtures::AggregatedFixtures, tested_root::TestedRoot},
+        core::MockFileSystem,
     };
 
     use super::*;
@@ -138,7 +139,7 @@ mod test {
         let mut fs = MockFileSystem::new();
         expect_create_dir_all!(fs, 1, "target");
         expect_create_dir_all!(fs, 1, "target/_resources");
-        expect_write_all!(fs, "target/index.html", "Report for module Test report");
+        expect_write_all!(fs, "target/index.html", "Report for module ");
         expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
         let exporter = MpaExporter::new(MockRenderer, empty_report, output_path, &fs);
