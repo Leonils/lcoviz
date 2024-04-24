@@ -34,7 +34,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         HtmlLightRenderer { links_computer }
     }
 
-    fn render_aggregated_counters(&self, counters: &AggregatedCoverageCounters) -> Vec<Div> {
+    fn render_aggregated_counters(counters: &AggregatedCoverageCounters) -> Vec<Div> {
         let percentage = counters.percentage();
         let percentage_class = get_percentage_class("bg", &percentage);
 
@@ -50,20 +50,21 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         ]
     }
 
-    fn render_aggregated_coverage(
-        &self,
-        coverage: &AggregatedCoverage,
-    ) -> impl Iterator<Item = Div> {
+    fn render_aggregated_coverage(coverage: &AggregatedCoverage) -> impl Iterator<Item = Div> {
         vec![
-            self.render_aggregated_counters(&coverage.lines),
-            self.render_aggregated_counters(&coverage.functions),
-            self.render_aggregated_counters(&coverage.branches),
+            Self::render_aggregated_counters(&coverage.lines),
+            Self::render_aggregated_counters(&coverage.functions),
+            Self::render_aggregated_counters(&coverage.branches),
         ]
         .into_iter()
         .flatten()
     }
 
-    fn render_file_row(&self, current_page: &impl WithPath, file: &impl TestedFile) -> Div {
+    fn render_file_row<'a>(
+        &'a self,
+        current_page: &impl WithPath,
+        file: &'a impl TestedFile,
+    ) -> Div {
         let link = self.links_computer.get_link_to(current_page, file);
         let img_src = self.links_computer.get_link_to_resource(
             current_page,
@@ -83,16 +84,18 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                         .with_class("item-name")
                         .with_child(Link::from_link_payload(link)),
                 )
-                .with_children(self.render_aggregated_coverage(file.get_aggregated_coverage())),
+                .with_children(Self::render_aggregated_coverage(
+                    file.get_aggregated_coverage(),
+                )),
         )
     }
 
-    fn render_module_row(
-        &self,
+    fn render_module_row<'a>(
+        &'a self,
         root: &impl WithPath,
         current_page: &impl WithPath,
-        module: &impl TestedContainer,
-    ) -> Div {
+        module: &'a impl TestedContainer,
+    ) -> Div<'a> {
         let submodules = module
             .get_container_children()
             .map(|module| self.render_module_row(root, current_page, module));
@@ -111,9 +114,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                                 self.links_computer.get_link_to(current_page, module),
                             ),
                         ))
-                        .with_children(
-                            self.render_aggregated_coverage(module.get_aggregated_coverage()),
-                        ),
+                        .with_children(Self::render_aggregated_coverage(
+                            module.get_aggregated_coverage(),
+                        )),
                 )
                 .with_child(
                     Div::new()
