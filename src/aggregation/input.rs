@@ -116,17 +116,18 @@ impl AggregatorInput {
 #[cfg(test)]
 mod test {
     use crate::{aggregation::input::AggregatorInput, test_utils::builders::InsertSection};
+    use lcov::Report;
 
     #[test]
     fn test_new_list_sections() {
-        let report = lcov::report::Report::new();
+        let report = Report::new();
         let input = AggregatorInput::new(report.clone());
         assert_eq!(input.list_sections(), report.sections);
     }
 
     #[test]
     fn test_with_prefix_list_sections() {
-        let report = lcov::report::Report::new().insert_empty_section("my/very/long/path/file.cpp");
+        let report = Report::new().insert_empty_section("my/very/long/path/file.cpp");
         let input = AggregatorInput::new(report.clone());
         let new_input = input.with_prefix("my/very/long/path/");
         assert_eq!(new_input.prefix, "my/very/long/path/");
@@ -137,28 +138,28 @@ mod test {
         expected = "Some tested files do not start with the prefix 'my/very/long/path/'. For example, another/prefix/file.cpp"
     )]
     fn test_with_prefix_list_sections_with_invalid_prefix() {
-        let report = lcov::report::Report::new().insert_empty_section("another/prefix/file.cpp");
+        let report = Report::new().insert_empty_section("another/prefix/file.cpp");
         let input = AggregatorInput::new(report.clone());
         input.with_prefix("my/very/long/path/");
     }
 
     #[test]
     fn test_longest_prefix_of_empty_is_empty() {
-        let report = lcov::report::Report::new();
+        let report = Report::new();
         let input = AggregatorInput::new(report.clone());
         assert_eq!(input.find_longest_prefix(), "");
     }
 
     #[test]
     fn test_longest_prefix_of_single_file_is_full_path() {
-        let report = lcov::report::Report::new().insert_empty_section("my/very/long/path/file.cpp");
+        let report = Report::new().insert_empty_section("my/very/long/path/file.cpp");
         let input = AggregatorInput::new(report.clone());
         assert_eq!(input.find_longest_prefix(), "my/very/long/path");
     }
 
     #[test]
     fn test_longest_prefix_of_multiple_files() {
-        let report = lcov::report::Report::new()
+        let report = Report::new()
             .insert_empty_section("my/very/long/path/file.cpp")
             .insert_empty_section("my/very/long/path/file2.cpp");
         let input = AggregatorInput::new(report.clone());
@@ -167,7 +168,7 @@ mod test {
 
     #[test]
     fn test_longest_prefix_of_multiple_files_at_different_levels() {
-        let report = lcov::report::Report::new()
+        let report = Report::new()
             .insert_empty_section("my/very/long/path/file.cpp")
             .insert_empty_section("my/very/long/path2/file2.cpp");
         let input = AggregatorInput::new(report.clone());
@@ -176,11 +177,39 @@ mod test {
 
     #[test]
     fn test_with_longest_prefix() {
-        let report = lcov::report::Report::new()
+        let report = Report::new()
             .insert_empty_section("my/very/long/path/file.cpp")
             .insert_empty_section("my/very/long/path/file2.cpp");
         let input = AggregatorInput::new(report.clone());
         let new_input = input.with_longest_prefix();
         assert_eq!(new_input.prefix, "my/very/long/path");
+    }
+
+    #[test]
+    fn last_part_of_empty_prefix_is_empty() {
+        let report = Report::new();
+        let input = AggregatorInput::new(report.clone());
+        assert_eq!(input.last_part_of_prefix(), "");
+    }
+
+    #[test]
+    fn last_part_of_prefix_with_single_part_is_single_part() {
+        let report = Report::new();
+        let input = AggregatorInput::new(report.clone()).with_prefix("foo");
+        assert_eq!(input.last_part_of_prefix(), "foo");
+    }
+
+    #[test]
+    fn last_part_of_absolute_prefix_with_single_part_is_single_part() {
+        let report = Report::new();
+        let input = AggregatorInput::new(report.clone()).with_prefix("/foo");
+        assert_eq!(input.last_part_of_prefix(), "foo");
+    }
+
+    #[test]
+    fn last_part_of_absolute_prefix_with_multiple_part_is_last_part() {
+        let report = Report::new();
+        let input = AggregatorInput::new(report.clone()).with_prefix("/foo/bar");
+        assert_eq!(input.last_part_of_prefix(), "bar");
     }
 }
