@@ -2,8 +2,8 @@ use std::include_str;
 
 use crate::{
     core::{
-        AggregatedCoverage, AggregatedCoverageCounters, LinksComputer, Renderer, TestedContainer,
-        TestedFile, WithPath,
+        AggregatedCoverage, AggregatedCoverageCounters, LinkPayload, LinksComputer, Renderer,
+        TestedContainer, TestedFile, WithPath,
     },
     file_provider::FileLinesProvider,
     html::{
@@ -32,10 +32,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     }
 
     fn render_aggregated_counter_chip(
-        &self,
-        name: &str,
+        name: &'static str,
         counter: &AggregatedCoverageCounters,
-    ) -> Div {
+    ) -> Div<'static> {
         let percentage = counter.percentage();
         let percentage_class = get_percentage_class("bg", &percentage);
         let percentage_chip_class = get_percentage_class("border", &percentage);
@@ -62,56 +61,43 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     }
 
     fn render_aggregated_coverage_chips(
-        &self,
         coverage: &AggregatedCoverage,
-    ) -> impl Iterator<Item = Div> {
+    ) -> impl Iterator<Item = Div<'static>> {
         vec![
-            self.render_aggregated_counter_chip("lines", &coverage.lines),
-            self.render_aggregated_counter_chip("functions", &coverage.functions),
-            self.render_aggregated_counter_chip("branches", &coverage.branches),
+            Self::render_aggregated_counter_chip("lines", &coverage.lines),
+            Self::render_aggregated_counter_chip("functions", &coverage.functions),
+            Self::render_aggregated_counter_chip("branches", &coverage.branches),
         ]
         .into_iter()
     }
 
-    fn render_gauges(&self, coverage: &AggregatedCoverage, add_link_to_section: bool) -> Div {
-        let lines_percentage = coverage.lines.percentage();
-        let functions_percentage = coverage.functions.percentage();
-        let branches_percentage = coverage.branches.percentage();
+    fn render_gauge(
+        counter: &AggregatedCoverageCounters,
+        name: &str,
+        add_link_to_section: bool,
+    ) -> Gauge {
+        let link = format!("#{}", name.to_lowercase());
+        Gauge::new(
+            counter.percentage(),
+            &format!("{} {}/{}", name, counter.covered_count, counter.count),
+            if add_link_to_section {
+                Some(&link)
+            } else {
+                None
+            },
+        )
+    }
 
+    fn render_gauges(&self, coverage: &AggregatedCoverage, with_link: bool) -> Div {
         Div::new()
             .with_class("gauges")
-            .with_child(Gauge::new(
-                lines_percentage,
-                &format!(
-                    "Lines {}/{}",
-                    coverage.lines.covered_count, coverage.lines.count
-                ),
-                if add_link_to_section {
-                    Some("#lines")
-                } else {
-                    None
-                },
+            .with_child(Self::render_gauge(&coverage.lines, "Lines", with_link))
+            .with_child(Self::render_gauge(
+                &coverage.functions,
+                "Functions",
+                with_link,
             ))
-            .with_child(Gauge::new(
-                functions_percentage,
-                &format!(
-                    "Functions {}/{}",
-                    coverage.functions.covered_count, coverage.functions.count
-                ),
-                if add_link_to_section {
-                    Some("#functions")
-                } else {
-                    None
-                },
-            ))
-            .with_child(Gauge::new(
-                branches_percentage,
-                &format!(
-                    "Branches {}/{}",
-                    coverage.branches.covered_count, coverage.branches.count
-                ),
-                None,
-            ))
+            .with_child(Self::render_gauge(&coverage.branches, "Branches", false))
     }
 
     fn render_aggregated_counters(&self, counters: &AggregatedCoverageCounters) -> Vec<Div> {
@@ -234,7 +220,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     )),
             )
             .with_child(Div::new().with_class("fill"))
-            .with_children(self.render_aggregated_coverage_chips(module.get_aggregated_coverage()))
+            .with_children(Self::render_aggregated_coverage_chips(
+                module.get_aggregated_coverage(),
+            ))
             .with_child(Div::new().with_class("w-20"));
 
         let submodules = module
@@ -326,27 +314,35 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     }
 
     fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
-        let links: Vec<Link> = self
+        let links = self
             .links_computer
             .get_links_from_file(root, file)
-            .map(|link| Link::from_link_payload(link))
-            .collect();
+            .collect::<Vec<LinkPayload>>();
 
-        if links.len() == 0 {
+        if links.is_empty() {
             return Div::new();
         }
 
-        let mut nav_bar = Div::new().with_class("navigation");
-        for link in links {
-            nav_bar = nav_bar
-                .with_child(Div::new().with_class("navigation-part").with_child(link))
-                .with_child(Div::new().with_text(" / "))
-        }
-        nav_bar.with_child(
-            Div::new()
-                .with_class("navigation-part")
-                .with_text(file.get_name()),
-        )
+        let links = links
+            .into_iter()
+            .map(|link| {
+                vec![
+                    Div::new()
+                        .with_class("navigation-part")
+                        .with_child(Link::from_link_payload(link)),
+                    Div::new().with_text(" / "),
+                ]
+            })
+            .flatten();
+
+        Div::new()
+            .with_class("navigation")
+            .with_children(links)
+            .with_child(
+                Div::new()
+                    .with_class("navigation-part")
+                    .with_text(file.get_name()),
+            )
     }
 
     fn render_layout(

@@ -7,13 +7,13 @@ use crate::core::{LinkPayload, LinksComputer, WithPath};
 pub struct MpaLinksComputer;
 impl MpaLinksComputer {
     fn get_link_to_file(
-        root: &impl WithPath,
-        file: &impl WithPath,
+        source: &impl WithPath,
+        target: &impl WithPath,
         file_path: &PathBuf,
     ) -> PathBuf {
         let file_extension = file_path.extension().unwrap_or_default();
         PathBuf::new()
-            .join(file.get_path_relative_to(&root.get_path()))
+            .join(target.get_path_relative_to(&source.get_path()))
             .with_extension(format!("{}.html", file_extension.to_string_lossy()))
     }
 
