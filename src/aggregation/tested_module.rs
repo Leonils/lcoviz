@@ -50,14 +50,6 @@ impl TestedModule {
             .unwrap()
             .add_file(path[1..].to_vec(), file);
     }
-
-    pub fn enumerate_code_files(&self) -> impl Iterator<Item = &TestedCodeFile> {
-        self.source_files
-            .iter()
-            .chain(self.modules.iter().flat_map(|m| m.enumerate_code_files()))
-            .collect::<Vec<&TestedCodeFile>>()
-            .into_iter()
-    }
 }
 
 impl TestedContainer for TestedModule {
