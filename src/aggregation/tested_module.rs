@@ -75,6 +75,10 @@ impl WithPath for TestedModule {
         &self.name
     }
 
+    fn is_dir(&self) -> bool {
+        true
+    }
+
     fn get_path_string(&self) -> String {
         self.path.clone()
     }

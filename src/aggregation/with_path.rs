@@ -60,9 +60,12 @@ mod test {
 
     #[test]
     fn when_getting_path_of_root_relative_to_code_file_it_should_return_the_path() {
-        let tested_file = TestedCodeFile::new("/path/file.cpp", "file.cpp");
-        let tested_root =
-            TestedRoot::new(AggregatorInput::new(lcov::report::Report::new()).with_prefix("/path"));
+        let tested_file = TestedCodeFile::new("path/file.cpp", "file.cpp");
+        let tested_root = TestedRoot::new(
+            AggregatorInput::new(lcov::report::Report::new())
+                .with_prefix("path")
+                .with_key("path"),
+        );
 
         let tested_root_path = PathBuf::from(tested_root.get_prefix());
         assert_eq!(

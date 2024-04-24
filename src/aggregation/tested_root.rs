@@ -8,6 +8,7 @@ use super::{input::AggregatorInput, tested_file::TestedCodeFile, tested_module::
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedRoot {
+    key: String,
     name: String,
     modules: Vec<TestedModule>,
     source_files: Vec<TestedCodeFile>,
@@ -29,6 +30,7 @@ impl TestedRoot {
             aggregated: AggregatedCoverage::default(),
             prefix: prefix_path.to_owned(),
             name: name.to_string(),
+            key: args.get_key().to_string(),
             ..Default::default()
         };
 
@@ -52,9 +54,10 @@ impl TestedRoot {
     }
 
     fn add_file(&mut self, section_key: SectionKey, section_value: SectionValue, prefix: &str) {
-        let file = TestedCodeFile::from_section(section_key, section_value, prefix);
+        let file = TestedCodeFile::from_section(section_key, section_value, prefix, &self.key);
         let section_path = file
-            .get_path_relative_to(&self.prefix)
+            .get_path()
+            // .get_path_relative_to(&self.prefix)
             .components()
             .filter(|c| c.as_os_str() != "/")
             .map(|c| c.as_os_str().to_str().unwrap().to_string())
@@ -77,7 +80,11 @@ impl TestedRoot {
         let target_module = match self.find_module_by_name(&module_name) {
             Some(existing_module) => existing_module,
             None => self.insert_new_module(
-                format!("{}/{}", self.prefix.to_str().unwrap(), module_name).as_str(),
+                PathBuf::new()
+                    .join(&self.key)
+                    .join(&module_name)
+                    .to_str()
+                    .unwrap(),
                 module_name.as_str(),
             ),
         };
@@ -116,8 +123,12 @@ impl WithPath for TestedRoot {
         &self.name
     }
 
+    fn is_dir(&self) -> bool {
+        true
+    }
+
     fn get_path_string(&self) -> String {
-        self.prefix.to_str().unwrap().to_string()
+        self.key.to_string()
     }
 }
 
@@ -130,6 +141,7 @@ impl TestedRoot {
             source_files,
             prefix: PathBuf::from(""),
             name: "Test report".to_string(),
+            key: "".to_string(),
         }
     }
 
@@ -140,6 +152,7 @@ impl TestedRoot {
             source_files: vec![],
             prefix: PathBuf::from(""),
             name: "Test report".to_string(),
+            key: "".to_string(),
         }
     }
 
@@ -153,6 +166,7 @@ impl TestedRoot {
             source_files,
             prefix: PathBuf::from(""),
             name: "Test report".to_string(),
+            key: "".to_string(),
         }
     }
 
@@ -213,7 +227,7 @@ mod test {
 
         let tested_file = TestedCodeFile::new("package/main.cpp", "main.cpp");
         let tested_module =
-            TestedModule::from_source_files("/package", "package", vec![tested_file]);
+            TestedModule::from_source_files("package", "package", vec![tested_file]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module]);
 
         assert_eq!(expected_tree, report_tree);
@@ -227,7 +241,7 @@ mod test {
 
         let tested_file = TestedCodeFile::new("/package/main.cpp", "main.cpp");
         let tested_module =
-            TestedModule::from_source_files("/package", "package", vec![tested_file]);
+            TestedModule::from_source_files("package", "package", vec![tested_file]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module]);
 
         assert_eq!(expected_tree, report_tree);
@@ -243,12 +257,12 @@ mod test {
 
         let tested_file = TestedCodeFile::new("package/sub-package/main.cpp", "main.cpp");
         let tested_module_2 = TestedModule::from_source_files(
-            "/package/sub-package",
+            "package/sub-package",
             "sub-package",
             vec![tested_file],
         );
         let tested_module_1 =
-            TestedModule::from_modules("/package", "package", vec![tested_module_2]);
+            TestedModule::from_modules("package", "package", vec![tested_module_2]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module_1]);
 
         assert_eq!(expected_tree, report_tree);
@@ -281,11 +295,11 @@ mod test {
         let tested_file_main = TestedCodeFile::new("my/package/main.cpp", "main.cpp");
         let tested_file_module = TestedCodeFile::new("my/package/module.cpp", "module.cpp");
         let tested_module_package = TestedModule::from_source_files(
-            "/my/package",
+            "my/package",
             "package",
             vec![tested_file_main, tested_file_module],
         );
-        let tested_module_my = TestedModule::from_modules("/my", "my", vec![tested_module_package]);
+        let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module_my]);
 
         assert_eq!(expected_tree, report_tree);
@@ -302,10 +316,10 @@ mod test {
         let tested_file_main = TestedCodeFile::new("my/package/main.cpp", "main.cpp");
         let tested_file_module = TestedCodeFile::new("yours/module.cpp", "module.cpp");
         let tested_module_package =
-            TestedModule::from_source_files("/my/package", "package", vec![tested_file_main]);
-        let tested_module_my = TestedModule::from_modules("/my", "my", vec![tested_module_package]);
+            TestedModule::from_source_files("my/package", "package", vec![tested_file_main]);
+        let tested_module_my = TestedModule::from_modules("my", "my", vec![tested_module_package]);
         let tested_module_yours =
-            TestedModule::from_source_files("/yours", "yours", vec![tested_file_module]);
+            TestedModule::from_source_files("yours", "yours", vec![tested_file_module]);
         let expected_tree = TestedRoot::from_modules(vec![tested_module_my, tested_module_yours]);
 
         assert_eq!(expected_tree, report_tree);
@@ -331,11 +345,8 @@ mod test {
             PathBuf::from("package/sub-package/main.cpp")
         );
 
-        assert_eq!(
-            sub_package.get_path(),
-            PathBuf::from("/package/sub-package")
-        );
-        assert_eq!(package.get_path(), PathBuf::from("/package"));
+        assert_eq!(sub_package.get_path(), PathBuf::from("package/sub-package"));
+        assert_eq!(package.get_path(), PathBuf::from("package"));
         assert_eq!(report_tree.get_path(), PathBuf::from(""));
     }
 

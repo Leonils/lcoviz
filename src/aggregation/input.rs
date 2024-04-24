@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 pub struct AggregatorInput {
     report: lcov::report::Report,
     prefix: String,
+    key: String,
 }
 
 impl AggregatorInput {
@@ -11,6 +12,7 @@ impl AggregatorInput {
         Self {
             report,
             prefix: String::new(),
+            key: String::new(),
         }
     }
 
@@ -43,6 +45,15 @@ impl AggregatorInput {
         AggregatorInput {
             report: self.report,
             prefix: prefix.to_string(),
+            key: self.key,
+        }
+    }
+
+    pub fn with_key(self, key: &str) -> AggregatorInput {
+        AggregatorInput {
+            report: self.report,
+            prefix: self.prefix,
+            key: key.to_string(),
         }
     }
 
@@ -85,11 +96,16 @@ impl AggregatorInput {
         AggregatorInput {
             report: self.report,
             prefix,
+            key: self.key,
         }
     }
 
     pub fn get_prefix(&self) -> &str {
         &self.prefix
+    }
+
+    pub fn get_key(&self) -> &str {
+        &self.key
     }
 }
 

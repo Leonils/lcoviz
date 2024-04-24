@@ -2,16 +2,10 @@ use std::path::PathBuf;
 
 use pathdiff::diff_paths;
 
-use crate::core::{FileSystem, LinkPayload, LinksComputer, WithPath};
+use crate::core::{LinkPayload, LinksComputer, WithPath};
 
-pub struct MpaLinksComputer<'a, TFileSystem: FileSystem> {
-    file_system: &'a TFileSystem,
-}
-impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
-    pub fn new(file_system: &'a TFileSystem) -> Self {
-        Self { file_system }
-    }
-
+pub struct MpaLinksComputer;
+impl MpaLinksComputer {
     fn get_link_to_file(
         root: &impl WithPath,
         file: &impl WithPath,
@@ -29,7 +23,7 @@ impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
     }
 
     fn get_path_to_root(&self, root: &impl WithPath, file: &impl WithPath) -> PathBuf {
-        match self.file_system.is_dir(&file.get_path()) {
+        match file.is_dir() {
             true => root.get_path_relative_to(&file.get_path()),
             false => {
                 let file_path = file.get_path();
@@ -46,7 +40,7 @@ impl<'a, TFileSystem: FileSystem> MpaLinksComputer<'a, TFileSystem> {
         }
     }
 }
-impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSystem> {
+impl LinksComputer for MpaLinksComputer {
     fn get_links_from_file(
         &self,
         root: &impl WithPath,
@@ -59,7 +53,7 @@ impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSy
         let root_path = root.get_path();
         let file_path = file.get_path();
 
-        let file_dir_path = match self.file_system.is_dir(&file_path) {
+        let file_dir_path = match file.is_dir() {
             true => file_path.to_path_buf(),
             false => file_path.parent().unwrap().to_path_buf(),
         };
@@ -103,7 +97,7 @@ impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSy
 
     fn get_link_to(&self, root: &impl WithPath, file: &impl WithPath) -> LinkPayload {
         let file_path = file.get_path();
-        let target = match self.file_system.is_dir(&file_path) {
+        let target = match file.is_dir() {
             true => Self::get_link_to_dir(root, file),
             false => Self::get_link_to_file(root, file, &file_path),
         };
@@ -131,23 +125,31 @@ impl<'a, TFileSystem: FileSystem> LinksComputer for MpaLinksComputer<'a, TFileSy
 mod test {
     use std::path::PathBuf;
 
-    use crate::core::{LinksComputer, MockFileSystem, WithPath};
+    use crate::{
+        adapters::exporters::mpa_links::MpaLinksComputer,
+        core::{LinksComputer, WithPath},
+    };
 
     struct MockWithPath {
         name: String,
         path: PathBuf,
+        is_dir: bool,
     }
     impl MockWithPath {
-        fn new(name: &str, path: &str) -> Self {
+        fn new(name: &str, path: &str, is_dir: bool) -> Self {
             Self {
                 name: name.to_string(),
                 path: PathBuf::from(path),
+                is_dir,
             }
         }
     }
     impl WithPath for MockWithPath {
         fn get_name(&self) -> &str {
             self.name.as_str()
+        }
+        fn is_dir(&self) -> bool {
+            self.is_dir
         }
         fn get_path(&self) -> std::path::PathBuf {
             self.path.clone()
@@ -159,12 +161,9 @@ mod test {
 
     #[test]
     fn when_getting_links_to_parent_modules_from_file_shall_return_links_to_index_files() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("file.rs", "/root/dir/file.rs");
-
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(false);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("file.rs", "/root/dir/file.rs", false);
+        let computer = MpaLinksComputer;
 
         let links = computer
             .get_links_from_file(&root, &file)
@@ -178,12 +177,9 @@ mod test {
 
     #[test]
     fn when_getting_links_to_parent_modules_from_dir_shall_return_links_to_index_files() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("module", "/root/module");
-
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(true);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("module", "/root/module", true);
+        let computer = MpaLinksComputer;
 
         let links = computer
             .get_links_from_file(&root, &file)
@@ -195,11 +191,9 @@ mod test {
 
     #[test]
     fn when_getting_links_to_module_nested_shall_return_links_to_index_files() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("module", "/root/dir/module/");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(true);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("module", "/root/dir/module/", true);
+        let computer = MpaLinksComputer;
 
         let links = computer
             .get_links_from_file(&root, &file)
@@ -213,10 +207,9 @@ mod test {
 
     #[test]
     fn when_getting_links_to_module_from_root_shall_return_empty() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("root", "/root");
-        let fs = MockFileSystem::new();
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("root", "/root", true);
+        let computer = MpaLinksComputer;
 
         let links = computer
             .get_links_from_file(&root, &file)
@@ -226,11 +219,20 @@ mod test {
 
     #[test]
     fn when_getting_link_to_file_it_shall_add_html_extension() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("file.rs", "/root/dir/file.rs");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(false);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("file.rs", "/root/dir/file.rs", false);
+        let computer = MpaLinksComputer;
+
+        let link = computer.get_link_to(&root, &file);
+        assert_eq!(link.link, "dir/file.rs.html");
+        assert_eq!(link.text, "file.rs");
+    }
+
+    #[test]
+    fn when_getting_link_to_file_from_empty_root_it_shall_add_html_extension() {
+        let root = MockWithPath::new("root", "", true);
+        let file = MockWithPath::new("file.rs", "dir/file.rs", false);
+        let computer = MpaLinksComputer;
 
         let link = computer.get_link_to(&root, &file);
         assert_eq!(link.link, "dir/file.rs.html");
@@ -239,11 +241,9 @@ mod test {
 
     #[test]
     fn when_getting_link_to_module_it_shall_add_index_html_to_path() {
-        let root = MockWithPath::new("root", "/root");
-        let file = MockWithPath::new("module", "/root/dir/module/");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(true);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let file = MockWithPath::new("module", "/root/dir/module/", true);
+        let computer = MpaLinksComputer;
 
         let link = computer.get_link_to(&root, &file);
         assert_eq!(link.link, "dir/module/index.html");
@@ -252,11 +252,9 @@ mod test {
 
     #[test]
     fn when_getting_resource_from_root_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root");
-        let current = MockWithPath::new("root", "/root");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(true);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let current = MockWithPath::new("root", "/root", true);
+        let computer = MpaLinksComputer;
 
         let link = computer.get_link_to_resource(&root, &current, "resource.svg");
         assert_eq!(link, "_resources/resource.svg");
@@ -264,11 +262,9 @@ mod test {
 
     #[test]
     fn when_getting_resource_from_module_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root");
-        let current = MockWithPath::new("module", "/root/module");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(true);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let current = MockWithPath::new("module", "/root/module", true);
+        let computer = MpaLinksComputer;
 
         let link = computer.get_link_to_resource(&root, &current, "resource.svg");
         assert_eq!(link, "../_resources/resource.svg");
@@ -276,11 +272,9 @@ mod test {
 
     #[test]
     fn when_getting_resource_from_file_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root");
-        let current = MockWithPath::new("file.rs", "/root/module/file.rs");
-        let mut fs = MockFileSystem::new();
-        fs.expect_is_dir().times(1).return_const(false);
-        let computer = super::MpaLinksComputer { file_system: &fs };
+        let root = MockWithPath::new("root", "/root", true);
+        let current = MockWithPath::new("file.rs", "/root/module/file.rs", false);
+        let computer = MpaLinksComputer;
 
         let link = computer.get_link_to_resource(&root, &current, "resource.svg");
         assert_eq!(link, "../_resources/resource.svg");

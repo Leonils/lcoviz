@@ -40,6 +40,7 @@ pub struct AggregatedCoverage {
 }
 
 pub trait TestedFile: WithPath {
+    fn get_original_file_path(&self) -> PathBuf;
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage;
     fn get_line_coverage(&self, line: u32) -> Option<u64>;
     fn get_functions(&self) -> impl Iterator<Item = (String, u64)>;
@@ -76,11 +77,16 @@ pub trait Exporter {
 pub trait WithPath {
     fn get_name(&self) -> &str;
     fn get_path_string(&self) -> String;
+    fn is_dir(&self) -> bool;
     fn get_path(&self) -> PathBuf {
         PathBuf::from(self.get_path_string())
     }
     fn get_path_relative_to(&self, source: &PathBuf) -> PathBuf {
-        diff_paths(self.get_path(), source).unwrap()
+        diff_paths(self.get_path(), source).expect(&format!(
+            "Cannot get relative path from {:?} to {:?}",
+            source,
+            self.get_path()
+        ))
     }
 }
 
@@ -107,9 +113,6 @@ pub trait LinksComputer {
 pub trait FileSystem {
     fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>>;
     fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>>;
-    fn is_dir(&self, path: &Path) -> bool {
-        path.is_dir()
-    }
 }
 pub struct LocalFileSystem;
 impl FileSystem for LocalFileSystem {

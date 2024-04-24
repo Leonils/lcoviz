@@ -5,7 +5,7 @@ use lcov_aggregator_report::{
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, tested_root::TestedRoot},
-    core::{Exporter, LocalFileSystem, WithPath},
+    core::{Exporter, LocalFileSystem},
 };
 use std::{env::args, error::Error, path::PathBuf};
 
@@ -22,9 +22,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!("Missing input path");
     }
 
-    // let input_path = args.next().map(PathBuf::from).expect("Missing input path");
-    // let output_path = args.next().map(PathBuf::from).expect("Missing output path");
-
     let mut report = Report::new();
     for input_path in input_paths {
         let other_report = Report::from_file(input_path)?;
@@ -33,11 +30,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let aggregator_input = AggregatorInput::new(report).with_longest_prefix();
     let tested_root = TestedRoot::new(aggregator_input);
-    if tested_root.get_path_string().is_empty() {
-        panic!("Cannot find common prefix in the input paths");
-    }
 
-    let links_computer = MpaLinksComputer::new(&LocalFileSystem);
+    let links_computer = MpaLinksComputer;
     let renderer = HtmlLightRenderer::new(links_computer);
 
     let file_system = LocalFileSystem;

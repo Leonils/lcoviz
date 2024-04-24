@@ -32,10 +32,8 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
         root: &impl WithPath,
         file: &impl TestedFile,
     ) -> Result<(), Box<dyn Error>> {
-        let lines_provider = LocalFileLinesProvider::new(file.get_path());
-        let mut target_path = self
-            .output_path_root
-            .join(file.get_path_relative_to(&self.root.get_path()));
+        let lines_provider = LocalFileLinesProvider::new(file.get_original_file_path());
+        let mut target_path = self.output_path_root.join(file.get_path());
 
         let extension = target_path.extension().unwrap_or_default();
         target_path.set_extension(format!("{}.html", extension.to_string_lossy()));
@@ -58,7 +56,7 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> MpaExporter<'a, TRenderer
         root: &impl WithPath,
         module: &impl TestedContainer,
     ) -> Result<(), Box<dyn Error>> {
-        let relative_path_root_to_module = module.get_path_relative_to(&self.root.get_path());
+        let relative_path_root_to_module = module.get_path();
 
         let output_path = self.output_path_root.join(relative_path_root_to_module);
         self.file_system.create_dir_all(&output_path)?;
@@ -84,7 +82,10 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem> Exporter
     for MpaExporter<'a, TRenderer, TFileSystem>
 {
     fn render_root(self) -> () {
-        self.render_module(&self.root, &self.root).unwrap();
+        self.render_module(&self.root, &self.root).expect(&format!(
+            "Failed to render root to {}:",
+            self.output_path_root.display()
+        ));
 
         let required_resources = self.renderer.get_required_resources(&self.root);
         self.file_system

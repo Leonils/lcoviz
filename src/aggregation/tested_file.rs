@@ -15,6 +15,7 @@ pub struct TestedCodeFile {
 }
 
 impl TestedCodeFile {
+    #[cfg(test)]
     pub fn new(path: &str, file_name: &str) -> Self {
         TestedCodeFile {
             file_name: String::from(file_name),
@@ -25,7 +26,12 @@ impl TestedCodeFile {
         }
     }
 
-    pub fn from_section(key: SectionKey, value: SectionValue, prefix: &str) -> Self {
+    pub fn from_section(
+        key: SectionKey,
+        value: SectionValue,
+        prefix: &str,
+        report_key: &str,
+    ) -> Self {
         let path = key.source_file.to_str().unwrap().to_string();
         let file_name = path.split('/').last().unwrap().to_string();
         let aggregated = AggregatedCoverage::from_section(&value);
@@ -33,7 +39,8 @@ impl TestedCodeFile {
         let prefix_parts = binding.components().collect::<Vec<_>>();
 
         let source_file_parts = key.source_file.components().skip(prefix_parts.len());
-        let path_relative_to_prefix = PathBuf::from_iter(source_file_parts)
+        let path_relative_to_prefix = PathBuf::from(report_key)
+            .join(PathBuf::from_iter(source_file_parts))
             .to_str()
             .unwrap()
             .to_string();
@@ -49,6 +56,10 @@ impl TestedCodeFile {
 }
 
 impl TestedFile for TestedCodeFile {
+    fn get_original_file_path(&self) -> PathBuf {
+        PathBuf::from(&self.path)
+    }
+
     fn get_aggregated_coverage(&self) -> &AggregatedCoverage {
         &self.aggregated
     }
@@ -73,8 +84,12 @@ impl WithPath for TestedCodeFile {
         &self.file_name
     }
 
+    fn is_dir(&self) -> bool {
+        false
+    }
+
     fn get_path_string(&self) -> String {
-        self.path.clone()
+        self.path_relative_to_prefix.clone()
     }
 }
 
@@ -117,7 +132,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedCodeFile::from_section(key, value, "");
+        let tested_file = TestedCodeFile::from_section(key, value, "", "");
         assert_eq!(tested_file.file_name, "file.cpp");
     }
 
@@ -129,7 +144,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedCodeFile::from_section(key, value, "path/");
+        let tested_file = TestedCodeFile::from_section(key, value, "path/", "");
         assert_eq!(tested_file.path_relative_to_prefix, "file.cpp");
     }
 
@@ -141,7 +156,7 @@ mod test {
         };
         let value = SectionValue::default();
 
-        let tested_file = TestedCodeFile::from_section(key, value, "");
+        let tested_file = TestedCodeFile::from_section(key, value, "", "");
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 0, 0);
     }
 
@@ -154,7 +169,7 @@ mod test {
 
         let section_value = generate_3_lines_2_covered_section();
 
-        let tested_file = TestedCodeFile::from_section(key, section_value, "");
+        let tested_file = TestedCodeFile::from_section(key, section_value, "", "");
         assert_aggregated_counters_eq(&tested_file.aggregated.lines, 3, 2);
     }
 }
