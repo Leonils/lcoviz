@@ -9,19 +9,7 @@ use lcov_aggregator_report::{
 };
 use std::{collections::HashMap, env::args, error::Error, path::PathBuf};
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = args();
-
-    let _ = args.next();
-
-    // first n-1 arguments are the input paths, the last one is the output path
-    let inputs = args.map(PathBuf::from).collect::<Vec<_>>();
-    let input_paths = &inputs[..inputs.len() - 1];
-    let output_path = inputs.last().expect("Missing output path").to_owned();
-    if input_paths.is_empty() {
-        panic!("Missing input path");
-    }
-
+fn handle_multi_report(input_paths: &[PathBuf]) -> Result<MultiReport, Box<dyn Error>> {
     let mut report_names = HashMap::<String, u32>::new();
     let mut report_inputs = Vec::<AggregatorInput>::new();
     for input_path in input_paths {
@@ -53,22 +41,42 @@ fn main() -> Result<(), Box<dyn Error>> {
         multi_report.add_report(TestedRoot::new(input));
     }
 
-    // let mut report = Report::new();
-    // for input_path in input_paths {
-    //     let other_report = Report::from_file(input_path)?;
-    //     report.merge(other_report)?;
-    // }
+    Ok(multi_report)
+}
 
-    // let aggregator_input = AggregatorInput::new(report).with_longest_prefix();
-    // let tested_root = TestedRoot::new(aggregator_input);
+fn handle_single_report(input_path: &PathBuf) -> Result<TestedRoot, Box<dyn Error>> {
+    let input = Report::from_file(input_path)?;
+    let aggregator_input = AggregatorInput::new(input).with_longest_prefix();
+    let tested_root = TestedRoot::new(aggregator_input);
+    Ok(tested_root)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = args();
+
+    let _ = args.next();
+
+    // first n-1 arguments are the input paths, the last one is the output path
+    let inputs = args.map(PathBuf::from).collect::<Vec<_>>();
+    let input_paths = &inputs[..inputs.len() - 1];
+    let output_path = inputs.last().expect("Missing output path").to_owned();
+    if input_paths.is_empty() {
+        panic!("Missing input path");
+    }
 
     let links_computer = MpaLinksComputer;
+    let file_system = LocalFileSystem;
     let renderer = HtmlLightRenderer::new(links_computer);
 
-    let file_system = LocalFileSystem;
-    let exporter = MpaExporter::new(renderer, multi_report, output_path, &file_system);
-    exporter.render_root();
-    // r(0, &multi_report);
+    if input_paths.len() != 1 {
+        let multi_report = handle_multi_report(input_paths)?;
+        let exporter = MpaExporter::new(renderer, multi_report, output_path, &file_system);
+        exporter.render_root();
+    } else {
+        let root = handle_single_report(input_paths.first().unwrap())?;
+        let exporter = MpaExporter::new(renderer, root, output_path, &file_system);
+        exporter.render_root();
+    };
 
     Ok(())
 }

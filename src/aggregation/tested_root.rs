@@ -76,11 +76,6 @@ impl TestedRoot {
         let module_name = path_relative_to_root[0].clone();
         let module_path_queue = path_relative_to_root[1..path_relative_to_root.len() - 1].to_vec();
 
-        println!(
-            "module_path_queue: {:?}, module_name: {:?}, path_relative: {:?}",
-            module_path_queue, module_name, path_relative_to_root
-        );
-
         let target_module = match self.find_module_by_name(&module_name) {
             Some(existing_module) => existing_module,
             None => self.insert_new_module(
