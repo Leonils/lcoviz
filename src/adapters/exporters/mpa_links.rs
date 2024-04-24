@@ -22,11 +22,13 @@ impl MpaLinksComputer {
             .join("index.html")
     }
 
-    fn get_path_to_root(&self, root: &impl WithPath, file: &impl WithPath) -> PathBuf {
+    fn get_path_to_root(&self, file: &impl WithPath) -> PathBuf {
+        let file_path = file.get_path();
+
         match file.is_dir() {
-            true => root.get_path_relative_to(&file.get_path()),
+            true => diff_paths("", file_path).unwrap_or_default(),
             false => {
-                let file_path = file.get_path();
+                let file_path = file_path;
                 let parent_path = file_path.parent().expect(
                     format!(
                         "File '{}', '{}' has no parent",
@@ -35,7 +37,7 @@ impl MpaLinksComputer {
                     )
                     .as_str(),
                 );
-                diff_paths(&root.get_path(), &parent_path).unwrap_or_default()
+                diff_paths("", &parent_path).unwrap_or_default()
             }
         }
     }
@@ -107,14 +109,9 @@ impl LinksComputer for MpaLinksComputer {
         }
     }
 
-    fn get_link_to_resource(
-        &self,
-        root: &impl WithPath,
-        current: &impl WithPath,
-        resource_name: &str,
-    ) -> String {
+    fn get_link_to_resource(&self, current: &impl WithPath, resource_name: &str) -> String {
         let target = &self
-            .get_path_to_root(root, current)
+            .get_path_to_root(current)
             .join("_resources")
             .join(resource_name);
         target.to_str().unwrap().to_string()
@@ -252,31 +249,28 @@ mod test {
 
     #[test]
     fn when_getting_resource_from_root_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root", true);
-        let current = MockWithPath::new("root", "/root", true);
+        let current = MockWithPath::new("root", "", true);
         let computer = MpaLinksComputer;
 
-        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        let link = computer.get_link_to_resource(&current, "resource.svg");
         assert_eq!(link, "_resources/resource.svg");
     }
 
     #[test]
     fn when_getting_resource_from_module_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root", true);
-        let current = MockWithPath::new("module", "/root/module", true);
+        let current = MockWithPath::new("module", "module", true);
         let computer = MpaLinksComputer;
 
-        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        let link = computer.get_link_to_resource(&current, "resource.svg");
         assert_eq!(link, "../_resources/resource.svg");
     }
 
     #[test]
     fn when_getting_resource_from_file_it_shall_get_a_relative_down_path() {
-        let root = MockWithPath::new("root", "/root", true);
-        let current = MockWithPath::new("file.rs", "/root/module/file.rs", false);
+        let current = MockWithPath::new("file.rs", "module/file.rs", false);
         let computer = MpaLinksComputer;
 
-        let link = computer.get_link_to_resource(&root, &current, "resource.svg");
+        let link = computer.get_link_to_resource(&current, "resource.svg");
         assert_eq!(link, "../_resources/resource.svg");
     }
 }

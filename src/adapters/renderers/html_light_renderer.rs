@@ -63,15 +63,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         .flatten()
     }
 
-    fn render_file_row(
-        &self,
-        root: &impl WithPath,
-        current_page: &impl WithPath,
-        file: &impl TestedFile,
-    ) -> Div {
+    fn render_file_row(&self, current_page: &impl WithPath, file: &impl TestedFile) -> Div {
         let link = self.links_computer.get_link_to(current_page, file);
         let img_src = self.links_computer.get_link_to_resource(
-            root,
             current_page,
             FileIcon::get_icon_key(file).unwrap_or_default(),
         );
@@ -105,7 +99,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(root, current_page, file));
+            .map(|file| self.render_file_row(current_page, file));
 
         Div::new().with_class("module-div").with_child(
             Div::new()
@@ -136,9 +130,9 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         current_page: &impl WithPath,
         module: &'a impl TestedContainer,
     ) -> Div<'a> {
-        let module_img_href =
-            self.links_computer
-                .get_link_to_resource(root, current_page, "module.svg");
+        let module_img_href = self
+            .links_computer
+            .get_link_to_resource(current_page, "module.svg");
 
         let module_page_href = self.links_computer.get_link_to(current_page, module);
 
@@ -165,7 +159,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
 
         let files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(root, current_page, file));
+            .map(|file| self.render_file_row(current_page, file));
 
         Div::new()
             .with_class("top-module-card")
@@ -205,15 +199,15 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         Table::new().with_rows(rows)
     }
 
-    fn render_functions(&self, root: &impl WithPath, file: &impl TestedFile) -> Div {
+    fn render_functions(&self, file: &impl TestedFile) -> Div {
         let functions = file.get_functions();
 
-        let covered_svg =
-            self.links_computer
-                .get_link_to_resource(root, file, "function_covered.svg");
-        let uncovered_svg =
-            self.links_computer
-                .get_link_to_resource(root, file, "function_uncovered.svg");
+        let covered_svg = self
+            .links_computer
+            .get_link_to_resource(file, "function_covered.svg");
+        let uncovered_svg = self
+            .links_computer
+            .get_link_to_resource(file, "function_uncovered.svg");
 
         let functions = functions.map(|(name, count)| {
             Div::new()
@@ -279,12 +273,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_layout(
-        &self,
-        root: &impl WithPath,
-        current: &impl WithPath,
-        content: String,
-    ) -> String {
+    fn render_layout(&self, current: &impl WithPath, content: String) -> String {
         return format!(
             "<html>
     <head>
@@ -300,11 +289,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     </body>
 </html>",
             self.links_computer
-                .get_link_to_resource(root, current, "html_light_renderer.css"),
+                .get_link_to_resource(current, "html_light_renderer.css"),
             self.links_computer
-                .get_link_to_resource(root, current, "gauge.css"),
+                .get_link_to_resource(current, "gauge.css"),
             self.links_computer
-                .get_link_to_resource(root, current, "colors.css"),
+                .get_link_to_resource(current, "colors.css"),
             content,
         );
     }
@@ -329,18 +318,11 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         resources.collect::<Vec<(&str, &str)>>().into_iter()
     }
 
-    fn render_title_with_img(
-        &self,
-        root: &impl WithPath,
-        current: &impl WithPath,
-        icon_key: &str,
-    ) -> Div {
+    fn render_title_with_img(&self, current: &impl WithPath, icon_key: &str) -> Div {
         Div::new()
             .with_class("title-with-image")
             .with_child(Img::new(
-                &self
-                    .links_computer
-                    .get_link_to_resource(root, current, icon_key),
+                &self.links_computer.get_link_to_resource(current, icon_key),
                 "File icon",
             ))
             .with_child(Text::h1(current.get_name()).with_class("code-file-name"))
@@ -355,13 +337,13 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
     ) -> String {
         let top_level_code_files = module
             .get_code_file_children()
-            .map(|file| self.render_file_row(root, module, file));
+            .map(|file| self.render_file_row(module, file));
 
         let mut main = Div::new().with_child(
             Div::new()
                 .with_class("top-module-card")
                 .with_class("header")
-                .with_child(self.render_title_with_img(root, module, "module-main.svg"))
+                .with_child(self.render_title_with_img(module, "module-main.svg"))
                 .with_child(self.render_navigation(root, module))
                 .with_child(CoverageGauges::new(module.get_aggregated_coverage(), true)),
         );
@@ -380,7 +362,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 .map(|submodule| self.render_top_module_row(root, module, submodule)),
         );
 
-        return self.render_layout(root, module, main.to_html());
+        return self.render_layout(module, main.to_html());
     }
 
     fn render_file_coverage_details(
@@ -396,7 +378,6 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 Div::new()
                     .with_class("top-module-card")
                     .with_child(self.render_title_with_img(
-                        root,
                         file,
                         FileIcon::get_icon_key(file).unwrap_or_default(),
                     ))
@@ -422,11 +403,11 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_child(
                         Div::new()
                             .with_class("functions")
-                            .with_child(self.render_functions(root, file)),
+                            .with_child(self.render_functions(file)),
                     ),
             );
 
-        self.render_layout(root, file, main.to_html())
+        self.render_layout(file, main.to_html())
     }
 
     fn get_required_resources(
