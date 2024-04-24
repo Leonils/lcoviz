@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-use super::file_icon::FileIcon;
+use super::{components::chip::render_aggregated_coverage_chips, file_icon::FileIcon};
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");
 const GAUGE_CSS: &str = include_str!("resources/gauge.css");
@@ -29,46 +29,6 @@ pub struct HtmlLightRenderer<TLinksComputer: LinksComputer> {
 impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
     pub fn new(links_computer: TLinksComputer) -> Self {
         HtmlLightRenderer { links_computer }
-    }
-
-    fn render_aggregated_counter_chip(
-        name: &'static str,
-        counter: &AggregatedCoverageCounters,
-    ) -> Div<'static> {
-        let percentage = counter.percentage();
-        let percentage_class = get_percentage_class("bg", &percentage);
-        let percentage_chip_class = get_percentage_class("border", &percentage);
-
-        let div = Div::new()
-            .with_class("coverage-stats-chip")
-            .with_class(percentage_chip_class.as_str())
-            .with_child(
-                Div::new()
-                    .with_class("coverage-stats-chip-left")
-                    .with_text(&format!(
-                        "{} {}/{}",
-                        name, counter.covered_count, counter.count
-                    )),
-            )
-            .with_child(
-                Div::new()
-                    .with_class("coverage-stats-chip-right")
-                    .with_class(&percentage_class)
-                    .with_text(&render_optional_percentage(percentage)),
-            );
-
-        div
-    }
-
-    fn render_aggregated_coverage_chips(
-        coverage: &AggregatedCoverage,
-    ) -> impl Iterator<Item = Div<'static>> {
-        vec![
-            Self::render_aggregated_counter_chip("lines", &coverage.lines),
-            Self::render_aggregated_counter_chip("functions", &coverage.functions),
-            Self::render_aggregated_counter_chip("branches", &coverage.branches),
-        ]
-        .into_iter()
     }
 
     fn render_gauge(
@@ -196,12 +156,12 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         )
     }
 
-    fn render_top_module_row(
-        &self,
+    fn render_top_module_row<'a>(
+        &'a self,
         root: &impl WithPath,
         current_page: &impl WithPath,
-        module: &impl TestedContainer,
-    ) -> Div {
+        module: &'a impl TestedContainer,
+    ) -> Div<'a> {
         let module_img_href =
             self.links_computer
                 .get_link_to_resource(root, current_page, "module.svg");
@@ -220,7 +180,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     )),
             )
             .with_child(Div::new().with_class("fill"))
-            .with_children(Self::render_aggregated_coverage_chips(
+            .with_children(render_aggregated_coverage_chips(
                 module.get_aggregated_coverage(),
             ))
             .with_child(Div::new().with_class("w-20"));

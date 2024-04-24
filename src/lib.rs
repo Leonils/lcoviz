@@ -25,6 +25,10 @@ pub mod adapters {
         mod file_icon;
         pub mod html_light_renderer;
 
+        pub mod components {
+            pub mod chip;
+        }
+
         #[cfg(test)]
         pub mod mock_renderer;
     }
