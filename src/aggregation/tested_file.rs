@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::core::{AggregatedCoverage, TestedFile, WithPath};
+use crate::core::{AggregatedCoverage, TestedFile};
 
 use lcov::report::section::line::Key as LineKey;
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
@@ -53,6 +53,14 @@ impl TestedCodeFile {
             path_relative_to_prefix,
         }
     }
+
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
+    }
+
+    pub fn get_path_relative_to_prefix(&self) -> &str {
+        &self.path_relative_to_prefix
+    }
 }
 
 impl TestedFile for TestedCodeFile {
@@ -79,20 +87,6 @@ impl TestedFile for TestedCodeFile {
     }
 }
 
-impl WithPath for TestedCodeFile {
-    fn get_name(&self) -> &str {
-        &self.file_name
-    }
-
-    fn is_dir(&self) -> bool {
-        false
-    }
-
-    fn get_path_string(&self) -> String {
-        self.path_relative_to_prefix.clone()
-    }
-}
-
 #[cfg(test)]
 impl TestedCodeFile {
     pub fn with_aggregated(path: &str, file_name: &str, aggregated: AggregatedCoverage) -> Self {
@@ -106,7 +100,7 @@ impl TestedCodeFile {
 #[cfg(test)]
 mod test {
     use crate::{
-        aggregation::aggregated::assert_aggregated_counters_eq,
+        aggregation::aggregated::assert_aggregated_counters_eq, core::WithPath,
         test_utils::builders::generate_3_lines_2_covered_section,
     };
 

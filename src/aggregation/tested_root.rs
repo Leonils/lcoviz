@@ -101,6 +101,14 @@ impl TestedRoot {
     pub fn get_prefix(&self) -> &PathBuf {
         &self.prefix
     }
+
+    pub fn get_root_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_key(&self) -> &str {
+        &self.key
+    }
 }
 
 impl TestedContainer for TestedRoot {
@@ -114,20 +122,6 @@ impl TestedContainer for TestedRoot {
 
     fn get_code_file_children(&self) -> impl Iterator<Item = &impl TestedFile> {
         self.source_files.iter()
-    }
-}
-
-impl WithPath for TestedRoot {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn is_dir(&self) -> bool {
-        true
-    }
-
-    fn get_path_string(&self) -> String {
-        self.key.to_string()
     }
 }
 

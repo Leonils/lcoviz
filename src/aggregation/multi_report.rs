@@ -1,4 +1,4 @@
-use crate::core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath};
+use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 
 use super::{tested_file::TestedCodeFile, tested_root::TestedRoot};
 
@@ -18,24 +18,6 @@ impl MultiReport {
     pub fn add_report(&mut self, report: TestedRoot) {
         self.aggregated.add(&report.get_aggregated_coverage());
         self.reports.push(report);
-    }
-}
-
-impl WithPath for MultiReport {
-    fn get_name(&self) -> &str {
-        "MultiReport"
-    }
-
-    fn get_path(&self) -> std::path::PathBuf {
-        std::path::PathBuf::from("")
-    }
-
-    fn get_path_string(&self) -> String {
-        "".to_string()
-    }
-
-    fn is_dir(&self) -> bool {
-        true
     }
 }
 

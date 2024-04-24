@@ -1,4 +1,4 @@
-use crate::core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath};
+use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 
 use super::tested_file::TestedCodeFile;
 
@@ -21,8 +21,12 @@ impl TestedModule {
         }
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    pub fn get_module_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_module_path(&self) -> &str {
+        &self.path
     }
 
     pub fn add_file(&mut self, path: Vec<String>, file: TestedCodeFile) {
@@ -70,20 +74,6 @@ impl TestedContainer for TestedModule {
     }
 }
 
-impl WithPath for TestedModule {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn is_dir(&self) -> bool {
-        true
-    }
-
-    fn get_path_string(&self) -> String {
-        self.path.clone()
-    }
-}
-
 #[cfg(test)]
 impl TestedModule {
     pub fn from_source_files(path: &str, name: &str, source_files: Vec<TestedCodeFile>) -> Self {
@@ -114,8 +104,9 @@ impl TestedModule {
 #[cfg(test)]
 mod tests {
 
-    use crate::aggregation::{
-        aggregated::assert_aggregated_counters_eq, fixtures::AggregatedFixtures,
+    use crate::{
+        aggregation::{aggregated::assert_aggregated_counters_eq, fixtures::AggregatedFixtures},
+        core::WithPath,
     };
 
     use super::*;
@@ -125,7 +116,7 @@ mod tests {
         let tested_module = TestedModule::new("path/to/name".to_string(), "name".to_string());
         assert_eq!(tested_module.name, "name");
         assert_eq!(tested_module.path, "path/to/name");
-        assert_eq!(tested_module.get_name(), "name");
+        assert_eq!(tested_module.get_module_name(), "name");
     }
 
     #[test]
