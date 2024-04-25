@@ -1,15 +1,19 @@
-#[derive(Debug, PartialEq)]
+use std::path::PathBuf;
+
+#[derive(Debug, PartialEq, Default)]
 pub struct Config {
     name: String,
+    inputs: Vec<PathBuf>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct CliConfigParser {
     name: Option<String>,
+    inputs: Vec<PathBuf>,
 }
 impl CliConfigParser {
     pub fn new() -> Self {
-        Self { name: None }
+        Self::default()
     }
 
     pub fn parse(mut self, args: &[String]) -> Result<Self, String> {
@@ -17,6 +21,13 @@ impl CliConfigParser {
         while let Some(arg) = args.next() {
             match arg.as_str() {
                 "--name" => self.set_name(args.next())?,
+                "--input" => {
+                    if let Some(input) = args.next() {
+                        self.inputs.push(PathBuf::from(input));
+                    } else {
+                        return Err("Argument --input requires a value".to_string());
+                    }
+                }
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
@@ -27,6 +38,7 @@ impl CliConfigParser {
     pub fn build(self) -> Config {
         Config {
             name: self.name.unwrap_or_else(|| "Test report".to_string()),
+            inputs: self.inputs,
         }
     }
 
@@ -44,6 +56,8 @@ impl CliConfigParser {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use super::*;
 
     fn parse(args: &str) -> Result<CliConfigParser, String> {
@@ -59,7 +73,8 @@ mod test {
         assert_eq!(
             parse("--name test").unwrap().build(),
             Config {
-                name: "test".to_string()
+                name: "test".to_string(),
+                ..Default::default()
             }
         );
     }
@@ -93,8 +108,41 @@ mod test {
         assert_eq!(
             parse("").unwrap().build(),
             Config {
-                name: "Test report".to_string()
+                name: "Test report".to_string(),
+                ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    fn when_specifying_input_with_single_path_it_shall_add_it_to_config() {
+        assert_eq!(
+            parse("--input ~/test.lcov").unwrap().build(),
+            Config {
+                name: "Test report".to_string(),
+                inputs: vec![PathBuf::from("~/test.lcov")]
+            }
+        );
+    }
+
+    #[test]
+    fn when_specifying_input_with_multiple_paths_it_shall_add_them_to_config() {
+        assert_eq!(
+            parse("--input ~/test.lcov --input ~/test2.lcov")
+                .unwrap()
+                .build(),
+            Config {
+                name: "Test report".to_string(),
+                inputs: vec![PathBuf::from("~/test.lcov"), PathBuf::from("~/test2.lcov")]
+            }
+        );
+    }
+
+    #[test]
+    fn when_specifying_input_without_value_it_shall_return_error() {
+        assert_eq!(
+            parse("--input").unwrap_err(),
+            "Argument --input requires a value"
         );
     }
 }
