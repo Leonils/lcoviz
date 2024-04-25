@@ -177,20 +177,6 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_functions<'a>(
-        &'a self,
-        file: &'a impl TestedFile,
-    ) -> FunctionDefs<'_, impl TestedFile> {
-        let covered_svg = self
-            .links_computer
-            .get_link_to_resource(file, "function_covered.svg");
-        let uncovered_svg = self
-            .links_computer
-            .get_link_to_resource(file, "function_uncovered.svg");
-
-        FunctionDefs::new(file, covered_svg, uncovered_svg)
-    }
-
     fn render_layout(&self, current: &impl WithPath, content: String) -> String {
         return format!(
             "<html>
@@ -318,7 +304,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("details-card")
                     .with_id("functions")
                     .with_child(Text::h2("Functions"))
-                    .with_child(self.render_functions(file)),
+                    .with_child(FunctionDefs::new(file, &self.links_computer)),
             );
 
         self.render_layout(file, main.to_html())

@@ -1,27 +1,32 @@
 use crate::{
-    core::TestedFile,
+    core::{LinksComputer, TestedFile},
     html::components::{Div, Img, Text, ToHtml},
 };
 
-pub struct FunctionDefs<'a, TFile: TestedFile> {
+pub struct FunctionDefs<'a, TLinksComputer: LinksComputer, TFile: TestedFile> {
     file: &'a TFile,
-    covered_svg: String,
-    uncovered_svg: String,
+    links_computer: &'a TLinksComputer,
 }
-impl<'a, TFile: TestedFile> FunctionDefs<'a, TFile> {
-    pub fn new(file: &'a TFile, covered_svg: String, uncovered_svg: String) -> Self {
+impl<'a, TLinksComputer: LinksComputer, TFile: TestedFile> FunctionDefs<'a, TLinksComputer, TFile> {
+    pub fn new(file: &'a TFile, links_computer: &'a TLinksComputer) -> Self {
         Self {
             file,
-            covered_svg,
-            uncovered_svg,
+            links_computer,
         }
     }
 
-    fn get_img_src(&self, count: u64) -> &str {
+    fn get_img_src(&self, count: u64) -> String {
+        let covered_svg = self
+            .links_computer
+            .get_link_to_resource(self.file, "function_covered.svg");
+        let uncovered_svg = self
+            .links_computer
+            .get_link_to_resource(self.file, "function_uncovered.svg");
+
         if count > 0 {
-            &self.covered_svg
+            covered_svg
         } else {
-            &self.uncovered_svg
+            uncovered_svg
         }
     }
 
@@ -34,7 +39,7 @@ impl<'a, TFile: TestedFile> FunctionDefs<'a, TFile> {
     }
 
     fn get_img(&self, count: u64) -> Img {
-        Img::new(self.get_img_src(count), "Function coverage")
+        Img::new(&self.get_img_src(count), "Function coverage")
     }
 
     fn render_function(&self, name: &str, count: u64) -> Div {
@@ -64,7 +69,9 @@ impl<'a, TFile: TestedFile> FunctionDefs<'a, TFile> {
     }
 }
 
-impl<'a, TFile: TestedFile> ToHtml for FunctionDefs<'a, TFile> {
+impl<'a, TLinksComputer: LinksComputer, TFile: TestedFile> ToHtml
+    for FunctionDefs<'a, TLinksComputer, TFile>
+{
     fn to_html(&self) -> String {
         self.render_functions().to_html()
     }
@@ -76,8 +83,8 @@ mod test {
 
     use super::*;
     use crate::{
-        aggregation::tested_file::TestedCodeFile, assert_html_eq,
-        test_utils::builders::InsertFunction,
+        adapters::exporters::mpa_links::MpaLinksComputer, aggregation::tested_file::TestedCodeFile,
+        assert_html_eq, test_utils::builders::InsertFunction,
     };
     use lcov::report::section::{Key as SectionKey, Value as SectionValue};
     #[test]
@@ -88,15 +95,12 @@ mod test {
             test_name: String::from(""),
         };
         let file = TestedCodeFile::from_section(key, section, "", "");
-
-        let covered_svg = "covered.svg".to_string();
-        let uncovered_svg = "uncovered.svg".to_string();
-        let functions = FunctionDefs::new(&file, covered_svg.clone(), uncovered_svg.clone());
+        let functions = FunctionDefs::new(&file, &MpaLinksComputer);
 
         assert_html_eq!(
             functions.to_html(),
             r#"<div class="functions">"#,
-            r#"<div class="function function-uncovered"><img src="uncovered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">0 calls</div></div>"#,
+            r#"<div class="function function-uncovered"><img src="_resources/function_uncovered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">0 calls</div></div>"#,
             r#"</div>"#
         );
     }
@@ -110,14 +114,12 @@ mod test {
         };
         let file = TestedCodeFile::from_section(key, section, "", "");
 
-        let covered_svg = "covered.svg".to_string();
-        let uncovered_svg = "uncovered.svg".to_string();
-        let functions = FunctionDefs::new(&file, covered_svg.clone(), uncovered_svg.clone());
+        let functions = FunctionDefs::new(&file, &MpaLinksComputer);
 
         assert_html_eq!(
             functions.to_html(),
             r#"<div class="functions">"#,
-            r#"<div class="function function-covered"><img src="covered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">1 calls</div></div>"#,
+            r#"<div class="function function-covered"><img src="_resources/function_covered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">1 calls</div></div>"#,
             r#"</div>"#
         );
     }
@@ -135,17 +137,15 @@ mod test {
         };
         let file = TestedCodeFile::from_section(key, section, "", "");
 
-        let covered_svg = "covered.svg".to_string();
-        let uncovered_svg = "uncovered.svg".to_string();
-        let functions = FunctionDefs::new(&file, covered_svg.clone(), uncovered_svg.clone());
+        let functions = FunctionDefs::new(&file, &MpaLinksComputer);
 
         assert_html_eq!(
             functions.to_html(),
             r#"<div class="functions">"#,
-            r#"<div class="function function-covered"><img src="covered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">3 calls</div></div>"#,
-            r#"<div class="function function-covered"><img src="covered.svg" alt="Function coverage" /><div class="function-name">f2</div><div class="fill"></div><div class="function-hit">1 calls</div></div>"#,
-            r#"<div class="function function-uncovered"><img src="uncovered.svg" alt="Function coverage" /><div class="function-name">f3</div><div class="fill"></div><div class="function-hit">0 calls</div></div>"#,
-            r#"<div class="function function-covered"><img src="covered.svg" alt="Function coverage" /><div class="function-name">f4</div><div class="fill"></div><div class="function-hit">2 calls</div></div>"#,
+            r#"<div class="function function-covered"><img src="_resources/function_covered.svg" alt="Function coverage" /><div class="function-name">f1</div><div class="fill"></div><div class="function-hit">3 calls</div></div>"#,
+            r#"<div class="function function-covered"><img src="_resources/function_covered.svg" alt="Function coverage" /><div class="function-name">f2</div><div class="fill"></div><div class="function-hit">1 calls</div></div>"#,
+            r#"<div class="function function-uncovered"><img src="_resources/function_uncovered.svg" alt="Function coverage" /><div class="function-name">f3</div><div class="fill"></div><div class="function-hit">0 calls</div></div>"#,
+            r#"<div class="function function-covered"><img src="_resources/function_covered.svg" alt="Function coverage" /><div class="function-name">f4</div><div class="fill"></div><div class="function-hit">2 calls</div></div>"#,
             r#"</div>"#
         );
     }
