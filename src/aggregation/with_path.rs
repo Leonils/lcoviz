@@ -240,7 +240,7 @@ mod test {
         #[test]
         fn test_multi_report_name_is_multi_report() {
             let multi_report = MultiReport::new("name");
-            assert_eq!(multi_report.get_name(), "MultiReport");
+            assert_eq!(multi_report.get_name(), "name");
         }
     }
 }

@@ -1,11 +1,10 @@
-use lcov::Report;
 use lcov_aggregator_report::{
     adapters::{
         exporters::{mpa::MpaExporter, mpa_links::MpaLinksComputer},
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
-    cli::parser::{CliConfigParser, Config, Input},
+    cli::parser::{CliConfigParser, Config},
     core::{Exporter, LocalFileSystem},
 };
 use std::{collections::HashMap, env::args, error::Error};

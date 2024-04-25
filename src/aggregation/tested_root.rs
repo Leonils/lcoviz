@@ -156,7 +156,7 @@ impl TestedRoot {
     }
 
     pub fn from_original_report(report: lcov::report::Report) -> Self {
-        TestedRoot::new(AggregatorInput::new(report))
+        TestedRoot::new(AggregatorInput::new(report).with_name("Test report"))
     }
 }
 
