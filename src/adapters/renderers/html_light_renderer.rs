@@ -293,11 +293,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("details-card")
                     .with_id("lines")
                     .with_child(Text::h2("Lines"))
-                    .with_child(
-                        Div::new()
-                            .with_class("lines")
-                            .with_child(CodeLines::new(file, lines)),
-                    ),
+                    .with_child(CodeLines::new(file, lines)),
             )
             .with_child(
                 Div::new()

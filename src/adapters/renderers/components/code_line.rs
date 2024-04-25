@@ -1,6 +1,6 @@
 use crate::{
     core::TestedFile,
-    html::components::{Pre, Row, Table, Text, ToHtml},
+    html::components::{Div, Pre, Row, Table, Text, ToHtml},
 };
 
 pub struct CodeLines<'a, TFile: TestedFile> {
@@ -32,14 +32,16 @@ impl<'a, TFile: TestedFile> CodeLines<'a, TFile> {
             .with_cell(Pre::new(&line))
     }
 
-    fn render_lines(&self) -> Table {
+    fn render_lines(&self) -> Div {
         let rows = self
             .lines
             .iter()
             .enumerate()
             .map(|(i, _)| self.render_line(i));
 
-        Table::new().with_rows(rows)
+        Div::new()
+            .with_class("lines")
+            .with_child(Table::new().with_rows(rows))
     }
 }
 impl<'a, TFile: TestedFile> ToHtml for CodeLines<'a, TFile> {
@@ -82,12 +84,14 @@ mod test {
 
         assert_html_eq!(
             lines.to_html(),
+            r#"<div class="lines">"#,
             "<table>",
             r#"<tr class="line-not-tested"><td>1</td><td></td><td><pre>line 1</pre></td></tr>"#,
             r#"<tr class="line-covered"><td>2</td><td>3</td><td><pre>line 2</pre></td></tr>"#,
             r#"<tr class="line-covered"><td>3</td><td>1</td><td><pre>line 3</pre></td></tr>"#,
             r#"<tr class="line-not-covered"><td>4</td><td>0</td><td><pre>line 4</pre></td></tr>"#,
-            "</table>"
+            "</table>",
+            "</div>"
         );
     }
 }
