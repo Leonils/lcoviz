@@ -43,6 +43,10 @@ pub mod adapters {
     }
 }
 
+pub mod cli {
+    pub mod parser;
+}
+
 #[cfg(test)]
 pub mod test_utils {
     pub mod builders;
