@@ -20,14 +20,10 @@ impl CliConfigParser {
         let mut args = args.iter();
         while let Some(arg) = args.next() {
             match arg.as_str() {
-                "--name" => self.set_name(args.next())?,
-                "--input" => {
-                    if let Some(input) = args.next() {
-                        self.inputs.push(PathBuf::from(input));
-                    } else {
-                        return Err("Argument --input requires a value".to_string());
-                    }
-                }
+                "--name" => self.set_name(Self::get_next_value("--name", &mut args)?)?,
+                "--input" => self
+                    .inputs
+                    .push(PathBuf::from(Self::get_next_value("--input", &mut args)?)),
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
@@ -42,14 +38,21 @@ impl CliConfigParser {
         }
     }
 
-    fn set_name(&mut self, name: Option<&String>) -> Result<(), String> {
+    fn get_next_value(
+        arg_name: &str,
+        args: &mut std::slice::Iter<String>,
+    ) -> Result<String, String> {
+        match args.next() {
+            Some(value) if !value.starts_with("--") => Ok(value.clone()),
+            _ => Err(format!("Argument {} requires a value", arg_name)),
+        }
+    }
+
+    fn set_name(&mut self, name: String) -> Result<(), String> {
         if self.name.is_some() {
             return Err("Argument --name already provided".to_string());
         }
-        if name.is_none() {
-            return Err("Argument --name requires a value".to_string());
-        }
-        self.name = Some(name.unwrap().clone());
+        self.name = Some(name);
         Ok(())
     }
 }
@@ -143,6 +146,14 @@ mod test {
         assert_eq!(
             parse("--input").unwrap_err(),
             "Argument --input requires a value"
+        );
+    }
+
+    #[test]
+    fn another_arg_shall_not_count_as_a_value_for_name() {
+        assert_eq!(
+            parse("--name --input ~/test.lcov").unwrap_err(),
+            "Argument --name requires a value"
         );
     }
 }
