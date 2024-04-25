@@ -21,10 +21,6 @@ impl TestedRoot {
         let prefix_path = PathBuf::from(args.get_prefix());
         let name = args.get_name();
 
-        println!(
-            "Creating root with prefix: {:?} and name {:?}",
-            prefix_path, name
-        );
         let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
             prefix: prefix_path.to_owned(),
@@ -320,10 +316,6 @@ mod test {
         let package = report_tree.modules.get(0).unwrap();
         let sub_package = package.get_module_at(0);
         let file = sub_package.get_source_file_at(0);
-
-        // assert_eq!(file.get_path(), vec!["package", "sub-package", "main.cpp"]);
-        // assert_eq!(sub_package.get_path(), vec!["package", "sub-package"]);
-        // assert_eq!(package.get_path(), vec!["package"]);
 
         assert_eq!(
             file.get_path(),

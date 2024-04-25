@@ -55,7 +55,7 @@ fn print_status(title: &str, status: &str) {
     const BOLD: &str = "\x1b[1m";
     const GREEN: &str = "\x1b[32m";
     const RESET: &str = "\x1b[0m";
-    println!("  {}{}{}{}: {}", BOLD, GREEN, title, RESET, status);
+    println!("{}{}{: >12} {}{}", BOLD, GREEN, title, RESET, status);
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -67,8 +67,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let renderer = HtmlLightRenderer::new(links_computer);
 
     print_status(
-        "Generating report",
-        format!("for {} input(s)", config.inputs.len()).as_str(),
+        "Generating",
+        format!(
+            "HTML report for {} input(s) lcov files",
+            config.inputs.len()
+        )
+        .as_str(),
     );
 
     if config.inputs.len() != 1 {
