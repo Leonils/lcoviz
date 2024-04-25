@@ -11,12 +11,9 @@ use crate::{
     },
 };
 
-use super::{
-    components::{
-        chip::render_aggregated_coverage_chips, code_line::CodeLines, function::FunctionDefs,
-        gauges::CoverageGauges, navigation::Navigation,
-    },
-    file_icon::FileIcon,
+use super::components::{
+    chip::render_aggregated_coverage_chips, code_line::CodeLines, file_icon::FileIcon,
+    function::FunctionDefs, gauges::CoverageGauges, navigation::Navigation,
 };
 
 const DEFAULT_CSS: &str = include_str!("resources/html_light_renderer.css");

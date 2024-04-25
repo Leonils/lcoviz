@@ -1,33 +1,33 @@
-pub mod file_provider;
+mod file_provider;
 
-pub mod html {
+mod html {
     pub mod colors;
     pub mod components;
 }
 
-pub mod aggregation {
+mod aggregation {
     mod aggregated;
     pub mod multi_report;
     pub mod tested_file;
     mod tested_module;
     pub mod tested_root;
-    pub mod with_path;
+    mod with_path;
 
     #[cfg(test)]
     pub mod fixtures;
 }
 
-pub mod core;
+mod core;
 pub mod operations;
 
 pub mod adapters {
     pub mod renderers {
-        mod file_icon;
         pub mod html_light_renderer;
 
-        pub mod components {
+        mod components {
             pub mod chip;
             pub mod code_line;
+            pub mod file_icon;
             pub mod function;
             pub mod gauges;
             pub mod navigation;
@@ -48,13 +48,13 @@ pub mod adapters {
     }
 }
 
-pub mod input {
+mod input {
     pub mod aggregator_input;
     pub mod config;
 }
 
 #[cfg(test)]
-pub mod test_utils {
+mod test_utils {
     pub mod builders;
-    pub mod macros;
+    mod macros;
 }

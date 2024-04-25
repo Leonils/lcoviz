@@ -26,8 +26,8 @@ impl FileIcon {
             .to_str()
             .unwrap_or_default()
         {
-            "rs" => Some(("rust.svg", include_str!("resources/rust.svg"))),
-            "dart" => Some(("dart.svg", include_str!("resources/dart.svg"))),
+            "rs" => Some(("rust.svg", include_str!("../resources/rust.svg"))),
+            "dart" => Some(("dart.svg", include_str!("../resources/dart.svg"))),
             _ => None,
         }
     }
@@ -98,7 +98,7 @@ mod tests {
         let file = MockTestFile::new("src/main.rs");
         assert_eq!(
             FileIcon::get_resources_required_by_file(&file),
-            Some(("rust.svg", include_str!("resources/rust.svg")))
+            Some(("rust.svg", include_str!("../resources/rust.svg")))
         );
     }
 
@@ -107,7 +107,7 @@ mod tests {
         let file = MockTestFile::new("src/main.dart");
         assert_eq!(
             FileIcon::get_resources_required_by_file(&file),
-            Some(("dart.svg", include_str!("resources/dart.svg")))
+            Some(("dart.svg", include_str!("../resources/dart.svg")))
         );
     }
 

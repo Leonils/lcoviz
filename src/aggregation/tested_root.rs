@@ -89,10 +89,6 @@ impl TestedRoot {
         target_module.add_file(module_path_queue, file);
     }
 
-    pub fn get_prefix(&self) -> &PathBuf {
-        &self.prefix
-    }
-
     pub fn get_root_name(&self) -> &str {
         &self.name
     }
@@ -156,6 +152,10 @@ impl TestedRoot {
 
     pub fn from_original_report(report: lcov::report::Report) -> Self {
         TestedRoot::new(AggregatorInput::new(report).with_name("Test report"))
+    }
+
+    pub fn get_prefix(&self) -> &PathBuf {
+        &self.prefix
     }
 }
 

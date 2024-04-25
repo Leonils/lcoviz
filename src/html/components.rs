@@ -211,6 +211,7 @@ impl<'a> Table<'a> {
     pub fn new() -> Self {
         Table { rows: Vec::new() }
     }
+    #[cfg(test)]
     pub fn with_row(mut self, row: Row<'a>) -> Self {
         self.rows.push(row);
         self

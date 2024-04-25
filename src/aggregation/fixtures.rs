@@ -4,10 +4,6 @@ use super::{tested_file::TestedCodeFile, tested_module::TestedModule, tested_roo
 
 pub struct AggregatedFixtures {}
 impl AggregatedFixtures {
-    pub fn get_empty_report() -> TestedRoot {
-        TestedRoot::default()
-    }
-
     pub fn get_top_level_file_report_no_line() -> TestedRoot {
         let main_cpp = TestedCodeFile::new("main.cpp", "main.cpp");
         let report = TestedRoot::from_source_files(vec![main_cpp]);
@@ -38,16 +34,6 @@ impl AggregatedFixtures {
             lines: AggregatedCoverageCounters::new(3, 1),
             ..Default::default()
         }
-    }
-
-    pub fn get_top_level_file_report_with_aggregated() -> TestedRoot {
-        let main_cpp = TestedCodeFile::with_aggregated(
-            "main.cpp",
-            "main.cpp",
-            Self::get_file_aggregates_10_5(),
-        );
-        let report = TestedRoot::from_source_files(vec![main_cpp]);
-        report
     }
 
     pub fn get_nested_file_in_report() -> TestedRoot {
