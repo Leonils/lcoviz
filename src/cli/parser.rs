@@ -1,15 +1,24 @@
 use std::path::PathBuf;
 
+#[derive(Debug, PartialEq)]
+enum Input {
+    LcovPath(PathBuf),
+    WithName(String, PathBuf),
+    WithPrefix(String, PathBuf, PathBuf),
+}
+
 #[derive(Debug, PartialEq, Default)]
 pub struct Config {
     name: String,
-    inputs: Vec<PathBuf>,
+    inputs: Vec<Input>,
 }
 
 #[derive(Debug, PartialEq, Default)]
 pub struct CliConfigParser {
+    args: Vec<String>,
+    step: usize,
     name: Option<String>,
-    inputs: Vec<PathBuf>,
+    inputs: Vec<Input>,
 }
 impl CliConfigParser {
     pub fn new() -> Self {
@@ -17,18 +26,34 @@ impl CliConfigParser {
     }
 
     pub fn parse(mut self, args: &[String]) -> Result<Self, String> {
-        let mut args = args.iter();
-        while let Some(arg) = args.next() {
+        self.args = args.to_vec();
+
+        while let Some(arg) = self.next() {
             match arg.as_str() {
-                "--name" => self.set_name(Self::get_next_value("--name", &mut args)?)?,
-                "--input" => self
-                    .inputs
-                    .push(PathBuf::from(Self::get_next_value("--input", &mut args)?)),
+                "--name" => self.set_name()?,
+                "--input" => self.add_input()?,
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
 
         Ok(self)
+    }
+
+    fn next(&mut self) -> Option<String> {
+        if self.step < self.args.len() {
+            let value = self.args[self.step].clone();
+            self.step += 1;
+            Some(value)
+        } else {
+            self.step += 1;
+            None
+        }
+    }
+
+    fn previous(&mut self) {
+        if self.step > 0 {
+            self.step -= 1;
+        }
     }
 
     pub fn build(self) -> Config {
@@ -38,17 +63,42 @@ impl CliConfigParser {
         }
     }
 
-    fn get_next_value(
-        arg_name: &str,
-        args: &mut std::slice::Iter<String>,
-    ) -> Result<String, String> {
-        match args.next() {
+    fn get_next_value(&mut self, arg_name: &str) -> Result<String, String> {
+        match self.next() {
             Some(value) if !value.starts_with("--") => Ok(value.clone()),
             _ => Err(format!("Argument {} requires a value", arg_name)),
         }
     }
 
-    fn set_name(&mut self, name: String) -> Result<(), String> {
+    fn extract_input_args(&mut self) -> Result<Input, String> {
+        let arg1 = self.get_next_value("--input")?;
+        let arg2 = self.get_next_value("--input");
+        if arg2.is_err() {
+            self.previous();
+            return Ok(Input::LcovPath(PathBuf::from(arg1)));
+        }
+
+        let arg3 = self.get_next_value("--input");
+        if arg3.is_err() {
+            self.previous();
+            return Ok(Input::WithName(arg1, PathBuf::from(arg2.unwrap())));
+        }
+
+        Ok(Input::WithPrefix(
+            arg1,
+            PathBuf::from(arg2.unwrap()),
+            PathBuf::from(arg3.unwrap()),
+        ))
+    }
+
+    fn add_input(&mut self) -> Result<(), String> {
+        let input = self.extract_input_args()?;
+        self.inputs.push(input);
+        Ok(())
+    }
+
+    fn set_name(&mut self) -> Result<(), String> {
+        let name = self.get_next_value("--name")?;
         if self.name.is_some() {
             return Err("Argument --name already provided".to_string());
         }
@@ -123,7 +173,7 @@ mod test {
             parse("--input ~/test.lcov").unwrap().build(),
             Config {
                 name: "Test report".to_string(),
-                inputs: vec![PathBuf::from("~/test.lcov")]
+                inputs: vec![Input::LcovPath(PathBuf::from("~/test.lcov"))]
             }
         );
     }
@@ -136,7 +186,10 @@ mod test {
                 .build(),
             Config {
                 name: "Test report".to_string(),
-                inputs: vec![PathBuf::from("~/test.lcov"), PathBuf::from("~/test2.lcov")]
+                inputs: vec![
+                    Input::LcovPath(PathBuf::from("~/test.lcov")),
+                    Input::LcovPath(PathBuf::from("~/test2.lcov"))
+                ]
             }
         );
     }
@@ -154,6 +207,59 @@ mod test {
         assert_eq!(
             parse("--name --input ~/test.lcov").unwrap_err(),
             "Argument --name requires a value"
+        );
+    }
+
+    #[test]
+    fn when_specifying_single_input_with_2_parts_it_shall_create_a_named_input() {
+        assert_eq!(
+            parse("--input named_root ~/test.lcov").unwrap().build(),
+            Config {
+                name: "Test report".to_string(),
+                inputs: vec![Input::WithName(
+                    "named_root".to_string(),
+                    PathBuf::from("~/test.lcov")
+                )]
+            }
+        );
+    }
+
+    #[test]
+    fn when_specifying_single_input_with_3_parts_it_shall_create_a_named_input_with_prefix() {
+        assert_eq!(
+            parse("--input named_root /foo/bar ~/test.lcov")
+                .unwrap()
+                .build(),
+            Config {
+                name: "Test report".to_string(),
+                inputs: vec![Input::WithPrefix(
+                    "named_root".to_string(),
+                    PathBuf::from("/foo/bar"),
+                    PathBuf::from("~/test.lcov")
+                )]
+            }
+        );
+    }
+
+    #[test]
+    fn when_specifying_multiple_inputs_with_different_number_of_parts_it_shall_create_each_one_with_correct_variant(
+    ) {
+        assert_eq!(
+            parse("--input named_root_1 ~/test.lcov --input ~/test2.lcov --input named_root_3 /foo/bar ~/test3.lcov")
+                .unwrap()
+                .build(),
+            Config {
+                name: "Test report".to_string(),
+                inputs: vec![
+                    Input::WithName("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
+                    Input::LcovPath(PathBuf::from("~/test2.lcov")),
+                    Input::WithPrefix(
+                        "named_root_3".to_string(),
+                        PathBuf::from("/foo/bar"),
+                        PathBuf::from("~/test3.lcov")
+                    )
+                ]
+            }
         );
     }
 }
