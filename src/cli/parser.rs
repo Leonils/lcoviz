@@ -373,4 +373,25 @@ mod test {
             "Argument -n requires a value"
         );
     }
+
+    #[test]
+    fn path_of_input_shall_return_correct_path_for_each_variant() {
+        assert_eq!(
+            Input::LcovPath(PathBuf::from("path")).get_path(),
+            PathBuf::from("path")
+        );
+        assert_eq!(
+            Input::WithName("name".to_string(), PathBuf::from("path")).get_path(),
+            PathBuf::from("path")
+        );
+        assert_eq!(
+            Input::WithPrefix(
+                "name".to_string(),
+                PathBuf::from("prefix"),
+                PathBuf::from("path")
+            )
+            .get_path(),
+            PathBuf::from("path")
+        );
+    }
 }
