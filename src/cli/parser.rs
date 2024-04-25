@@ -1,17 +1,26 @@
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
-enum Input {
+pub enum Input {
     LcovPath(PathBuf),
     WithName(String, PathBuf),
     WithPrefix(String, PathBuf, PathBuf),
 }
+impl Input {
+    pub fn get_path(&self) -> PathBuf {
+        match self {
+            Input::LcovPath(path) => path.clone(),
+            Input::WithName(_, path) => path.clone(),
+            Input::WithPrefix(_, _, path) => path.clone(),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Default)]
 pub struct Config {
-    name: String,
-    inputs: Vec<Input>,
-    output: PathBuf,
+    pub name: String,
+    pub inputs: Vec<Input>,
+    pub output: PathBuf,
 }
 
 #[derive(Debug, PartialEq, Default)]

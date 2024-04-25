@@ -8,7 +8,7 @@ use crate::{
 pub struct MpaExporter<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer> {
     renderer: TRenderer,
     root: TRoot,
-    output_path_root: PathBuf,
+    output_path_root: &'a PathBuf,
     file_system: &'a TFileSystem,
 }
 impl<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer>
@@ -17,7 +17,7 @@ impl<'a, TRenderer: Renderer, TFileSystem: FileSystem, TRoot: TestedContainer>
     pub fn new(
         renderer: TRenderer,
         root: TRoot,
-        output_path_root: PathBuf,
+        output_path_root: &'a PathBuf,
         file_system: &'a TFileSystem,
     ) -> Self {
         MpaExporter {
@@ -144,7 +144,7 @@ mod test {
         expect_write_all!(fs, "target/index.html", "Report for module ");
         expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
-        let exporter = MpaExporter::new(MockRenderer, empty_report, output_path, &fs);
+        let exporter = MpaExporter::new(MockRenderer, empty_report, &output_path, &fs);
         exporter.render_root();
     }
 
@@ -160,7 +160,7 @@ mod test {
         expect_write_all!(fs, "target/main.cpp.html", "Report for file main.cpp");
         expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
-        let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
+        let exporter = MpaExporter::new(MockRenderer, report, &output_path, &fs);
         exporter.render_root();
     }
 
@@ -183,7 +183,7 @@ mod test {
         );
         expect_write_all!(fs, "target/_resources/resource.svg", "<svg>...</svg>");
 
-        let exporter = MpaExporter::new(MockRenderer, report, output_path, &fs);
+        let exporter = MpaExporter::new(MockRenderer, report, &output_path, &fs);
         exporter.render_root();
     }
 }

@@ -5,11 +5,12 @@ use lcov_aggregator_report::{
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
+    cli::parser::CliConfigParser,
     core::{Exporter, LocalFileSystem},
 };
 use std::{collections::HashMap, env::args, error::Error, path::PathBuf};
 
-fn handle_multi_report(input_paths: &[PathBuf]) -> Result<MultiReport, Box<dyn Error>> {
+fn handle_multi_report(input_paths: Vec<PathBuf>) -> Result<MultiReport, Box<dyn Error>> {
     let mut report_names = HashMap::<String, u32>::new();
     let mut report_inputs = Vec::<AggregatorInput>::new();
     for input_path in input_paths {
@@ -51,32 +52,45 @@ fn handle_single_report(input_path: &PathBuf) -> Result<TestedRoot, Box<dyn Erro
     Ok(tested_root)
 }
 
+fn print_status(title: &str, status: &str) {
+    const BOLD: &str = "\x1b[1m";
+    const GREEN: &str = "\x1b[32m";
+    const RESET: &str = "\x1b[0m";
+    println!("  {}{}{}{}: {}", BOLD, GREEN, title, RESET, status);
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = args();
-
-    let _ = args.next();
-
-    // first n-1 arguments are the input paths, the last one is the output path
-    let inputs = args.map(PathBuf::from).collect::<Vec<_>>();
-    let input_paths = &inputs[..inputs.len() - 1];
-    let output_path = inputs.last().expect("Missing output path").to_owned();
-    if input_paths.is_empty() {
-        panic!("Missing input path");
-    }
+    let args = args().skip(1).collect::<Vec<String>>();
+    let config = CliConfigParser::new().parse(&args)?.build()?;
 
     let links_computer = MpaLinksComputer;
     let file_system = LocalFileSystem;
     let renderer = HtmlLightRenderer::new(links_computer);
+    let input_paths = config
+        .inputs
+        .iter()
+        .map(|p| p.get_path())
+        .collect::<Vec<PathBuf>>();
 
-    if input_paths.len() != 1 {
+    print_status(
+        "Generating report",
+        format!("for {} input(s)", input_paths.len()).as_str(),
+    );
+
+    if config.inputs.len() != 1 {
         let multi_report = handle_multi_report(input_paths)?;
-        let exporter = MpaExporter::new(renderer, multi_report, output_path, &file_system);
+        let exporter = MpaExporter::new(renderer, multi_report, &config.output, &file_system);
         exporter.render_root();
     } else {
         let root = handle_single_report(input_paths.first().unwrap())?;
-        let exporter = MpaExporter::new(renderer, root, output_path, &file_system);
+        let exporter = MpaExporter::new(renderer, root, &config.output, &file_system);
         exporter.render_root();
     };
+
+    print_status(
+        "Success",
+        format!("Report generated at {}", config.output.display()).as_str(),
+    );
 
     Ok(())
 }
