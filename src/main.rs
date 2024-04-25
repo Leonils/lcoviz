@@ -4,16 +4,16 @@ use lcov_aggregator_report::{
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
-    cli::parser::{CliConfigParser, Config},
+    cli::{config::Config, parser::CliConfigParser},
     core::{Exporter, LocalFileSystem},
 };
 use std::{collections::HashMap, env::args, error::Error};
 
-fn handle_multi_report(config: &Config) -> Result<MultiReport, Box<dyn Error>> {
+fn handle_multi_report(config: Config) -> Result<MultiReport, Box<dyn Error>> {
     let mut report_names = HashMap::<String, u32>::new();
     let mut report_inputs = Vec::<AggregatorInput>::new();
 
-    for config_input in config.inputs.iter() {
+    for config_input in config.inputs.into_iter() {
         let aggregator_input = AggregatorInput::from_config_input(config_input);
         let wanted_key = aggregator_input.last_part_of_prefix().to_string();
         report_names
@@ -44,9 +44,9 @@ fn handle_multi_report(config: &Config) -> Result<MultiReport, Box<dyn Error>> {
     Ok(multi_report)
 }
 
-fn handle_single_report(config: &Config) -> Result<TestedRoot, Box<dyn Error>> {
-    let input = config.inputs.first().unwrap();
-    let aggregator_input = AggregatorInput::from_config_input(input);
+fn handle_single_report(config: Config) -> Result<TestedRoot, Box<dyn Error>> {
+    let input = config.inputs.into_iter().next().unwrap();
+    let aggregator_input = AggregatorInput::from_config_input(input).with_name(&config.name);
     let tested_root = TestedRoot::new(aggregator_input);
     Ok(tested_root)
 }
@@ -68,26 +68,42 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print_status(
         "Generating",
-        format!(
+        &format!(
             "HTML report for {} input(s) lcov files",
             config.inputs.len()
-        )
-        .as_str(),
+        ),
     );
 
+    print_status("", &format!("Report name: '{}'", config.name));
+    print_status("", "Inputs: ");
+    for input in config.inputs.iter() {
+        print_status(
+            "",
+            &format!(
+                "  - {}{}",
+                input
+                    .name
+                    .as_ref()
+                    .map_or("".to_string(), |f| format!("{}: ", f)),
+                input.path.display()
+            ),
+        );
+    }
+
+    let output = config.output.clone();
     if config.inputs.len() != 1 {
-        let multi_report = handle_multi_report(&config)?;
-        let exporter = MpaExporter::new(renderer, multi_report, &config.output, &file_system);
+        let multi_report = handle_multi_report(config)?;
+        let exporter = MpaExporter::new(renderer, multi_report, &output, &file_system);
         exporter.render_root();
     } else {
-        let root = handle_single_report(&config)?;
-        let exporter = MpaExporter::new(renderer, root, &config.output, &file_system);
+        let root = handle_single_report(config)?;
+        let exporter = MpaExporter::new(renderer, root, &output, &file_system);
         exporter.render_root();
     };
 
     print_status(
         "Success",
-        format!("Report generated at {}", config.output.display()).as_str(),
+        format!("Report generated at {}", output.display()).as_str(),
     );
 
     Ok(())

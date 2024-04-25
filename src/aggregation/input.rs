@@ -1,7 +1,7 @@
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 use std::collections::BTreeMap;
 
-use crate::cli::parser::Input;
+use crate::cli::config::Input;
 
 pub struct AggregatorInput {
     report: lcov::report::Report,
@@ -20,16 +20,17 @@ impl AggregatorInput {
         }
     }
 
-    pub fn from_config_input(input: &Input) -> Self {
-        let report = lcov::Report::from_file(input.get_path()).unwrap();
-        match input {
-            Input::LcovPath(_) => AggregatorInput::new(report).with_longest_prefix(),
-            Input::WithName(name, _) => AggregatorInput::new(report)
-                .with_longest_prefix()
-                .with_name(&name),
-            Input::WithPrefix(name, prefix, _) => AggregatorInput::new(report)
-                .with_prefix(prefix.to_str().unwrap())
-                .with_name(&name),
+    pub fn from_config_input(input: Input) -> Self {
+        let report = lcov::Report::from_file(input.path).unwrap();
+        let aggregator_input = Self::new(report);
+        let aggregator_input = match input.prefix {
+            Some(prefix) => aggregator_input.with_prefix(prefix.to_str().unwrap()),
+            None => aggregator_input.with_longest_prefix(),
+        };
+
+        match input.name {
+            Some(name) => aggregator_input.with_name(&name),
+            None => aggregator_input,
         }
     }
 

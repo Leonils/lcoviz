@@ -1,27 +1,6 @@
 use std::path::PathBuf;
 
-#[derive(Debug, PartialEq)]
-pub enum Input {
-    LcovPath(PathBuf),
-    WithName(String, PathBuf),
-    WithPrefix(String, PathBuf, PathBuf),
-}
-impl Input {
-    pub fn get_path(&self) -> PathBuf {
-        match self {
-            Input::LcovPath(path) => path.clone(),
-            Input::WithName(_, path) => path.clone(),
-            Input::WithPrefix(_, _, path) => path.clone(),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Default)]
-pub struct Config {
-    pub name: String,
-    pub inputs: Vec<Input>,
-    pub output: PathBuf,
-}
+use super::config::{Config, Input};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct CliConfigParser {
@@ -93,20 +72,27 @@ impl CliConfigParser {
         let arg2 = self.get_next_value(arg_name);
         if arg2.is_err() {
             self.previous();
-            return Ok(Input::LcovPath(PathBuf::from(arg1)));
+            return Ok(Input {
+                path: PathBuf::from(arg1),
+                ..Default::default()
+            });
         }
 
         let arg3 = self.get_next_value(arg_name);
         if arg3.is_err() {
             self.previous();
-            return Ok(Input::WithName(arg1, PathBuf::from(arg2.unwrap())));
+            return Ok(Input {
+                name: Some(arg1.to_string()),
+                path: PathBuf::from(arg2.unwrap()),
+                ..Default::default()
+            });
         }
 
-        Ok(Input::WithPrefix(
-            arg1,
-            PathBuf::from(arg2.unwrap()),
-            PathBuf::from(arg3.unwrap()),
-        ))
+        Ok(Input {
+            name: Some(arg1.to_string()),
+            prefix: Some(PathBuf::from(arg2.unwrap())),
+            path: PathBuf::from(arg3.unwrap()),
+        })
     }
 
     fn add_input(&mut self, arg_name: &str) -> Result<(), String> {
@@ -233,7 +219,7 @@ mod test {
             Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
-                inputs: vec![Input::LcovPath(PathBuf::from("~/test.lcov"))]
+                inputs: vec![Input::from_path(PathBuf::from("~/test.lcov"))]
             }
         );
     }
@@ -249,8 +235,8 @@ mod test {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
-                    Input::LcovPath(PathBuf::from("~/test.lcov")),
-                    Input::LcovPath(PathBuf::from("~/test2.lcov"))
+                    Input::from_path(PathBuf::from("~/test.lcov")),
+                    Input::from_path(PathBuf::from("~/test2.lcov"))
                 ]
             }
         );
@@ -282,7 +268,7 @@ mod test {
             Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
-                inputs: vec![Input::WithName(
+                inputs: vec![Input::from_name_and_path(
                     "named_root".to_string(),
                     PathBuf::from("~/test.lcov")
                 )]
@@ -300,7 +286,7 @@ mod test {
             Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
-                inputs: vec![Input::WithPrefix(
+                inputs: vec![Input::from_name_prefix_and_path(
                     "named_root".to_string(),
                     PathBuf::from("/foo/bar"),
                     PathBuf::from("~/test.lcov")
@@ -320,9 +306,9 @@ mod test {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
-                    Input::WithName("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
-                    Input::LcovPath(PathBuf::from("~/test2.lcov")),
-                    Input::WithPrefix(
+                    Input::from_name_and_path("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
+                    Input::from_path(PathBuf::from("~/test2.lcov")),
+                    Input::from_name_prefix_and_path(
                         "named_root_3".to_string(),
                         PathBuf::from("/foo/bar"),
                         PathBuf::from("~/test3.lcov")
@@ -342,9 +328,9 @@ mod test {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
-                    Input::WithName("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
-                    Input::LcovPath(PathBuf::from("~/test2.lcov")),
-                    Input::WithPrefix(
+                    Input::from_name_and_path("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
+                    Input::from_path(PathBuf::from("~/test2.lcov")),
+                    Input::from_name_prefix_and_path(
                         "named_root_3".to_string(),
                         PathBuf::from("/foo/bar"),
                         PathBuf::from("~/test3.lcov")
@@ -377,20 +363,20 @@ mod test {
     #[test]
     fn path_of_input_shall_return_correct_path_for_each_variant() {
         assert_eq!(
-            Input::LcovPath(PathBuf::from("path")).get_path(),
+            Input::from_path(PathBuf::from("path")).path,
             PathBuf::from("path")
         );
         assert_eq!(
-            Input::WithName("name".to_string(), PathBuf::from("path")).get_path(),
+            Input::from_name_and_path("name".to_string(), PathBuf::from("path")).path,
             PathBuf::from("path")
         );
         assert_eq!(
-            Input::WithPrefix(
+            Input::from_name_prefix_and_path(
                 "name".to_string(),
                 PathBuf::from("prefix"),
                 PathBuf::from("path")
             )
-            .get_path(),
+            .path,
             PathBuf::from("path")
         );
     }

@@ -9,6 +9,8 @@ edition = "2021"
 htmlescape = "0.3.1"
 lcov = "0.8.1"
 pathdiff = "0.2.1"
+serde = { version = "1.0.198", features = ["derive"] }
+toml = "0.8.12"
 
 [dev-dependencies]
 mockall = "0.12.1"
