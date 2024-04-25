@@ -11,6 +11,7 @@ enum Input {
 pub struct Config {
     name: String,
     inputs: Vec<Input>,
+    output: PathBuf,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -19,6 +20,7 @@ pub struct CliConfigParser {
     step: usize,
     name: Option<String>,
     inputs: Vec<Input>,
+    output: Option<PathBuf>,
 }
 impl CliConfigParser {
     pub fn new() -> Self {
@@ -32,6 +34,7 @@ impl CliConfigParser {
             match arg.as_str() {
                 "--name" => self.set_name()?,
                 "--input" => self.add_input()?,
+                "--output" => self.set_output()?,
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
@@ -56,11 +59,16 @@ impl CliConfigParser {
         }
     }
 
-    pub fn build(self) -> Config {
-        Config {
+    pub fn build(self) -> Result<Config, String> {
+        let output = self
+            .output
+            .ok_or_else(|| "Argument --output is required".to_string())?;
+
+        Ok(Config {
             name: self.name.unwrap_or_else(|| "Test report".to_string()),
             inputs: self.inputs,
-        }
+            output,
+        })
     }
 
     fn get_next_value(&mut self, arg_name: &str) -> Result<String, String> {
@@ -105,6 +113,15 @@ impl CliConfigParser {
         self.name = Some(name);
         Ok(())
     }
+
+    fn set_output(&mut self) -> Result<(), String> {
+        let output = self.get_next_value("--output")?;
+        if self.output.is_some() {
+            return Err("Argument --output already provided".to_string());
+        }
+        self.output = Some(PathBuf::from(output));
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -122,13 +139,53 @@ mod test {
     }
 
     #[test]
-    fn test_config() {
+    fn when_providing_output_only_it_shall_set_default_name() {
         assert_eq!(
-            parse("--name test").unwrap().build(),
+            parse("--output output").unwrap().build().unwrap(),
             Config {
+                output: PathBuf::from("output"),
+                name: "Test report".to_string(),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn when_output_is_missing_it_shall_fail_to_build() {
+        assert_eq!(
+            parse("--name test").unwrap().build().unwrap_err(),
+            "Argument --output is required"
+        );
+    }
+
+    #[test]
+    fn when_providing_name_and_output_it_shall_build_the_config() {
+        assert_eq!(
+            parse("--output output --name test")
+                .unwrap()
+                .build()
+                .unwrap(),
+            Config {
+                output: PathBuf::from("output"),
                 name: "test".to_string(),
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    fn when_providing_output_without_value_it_shall_return_error() {
+        assert_eq!(
+            parse("--output").unwrap_err(),
+            "Argument --output requires a value"
+        );
+    }
+
+    #[test]
+    fn when_providing_output_twice_it_shall_return_error() {
+        assert_eq!(
+            parse("--output output --output output2").unwrap_err(),
+            "Argument --output already provided"
         );
     }
 
@@ -157,21 +214,14 @@ mod test {
     }
 
     #[test]
-    fn when_not_providing_name_it_shall_use_default() {
-        assert_eq!(
-            parse("").unwrap().build(),
-            Config {
-                name: "Test report".to_string(),
-                ..Default::default()
-            }
-        );
-    }
-
-    #[test]
     fn when_specifying_input_with_single_path_it_shall_add_it_to_config() {
         assert_eq!(
-            parse("--input ~/test.lcov").unwrap().build(),
+            parse("--output output  --input ~/test.lcov")
+                .unwrap()
+                .build()
+                .unwrap(),
             Config {
+                output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::LcovPath(PathBuf::from("~/test.lcov"))]
             }
@@ -181,10 +231,12 @@ mod test {
     #[test]
     fn when_specifying_input_with_multiple_paths_it_shall_add_them_to_config() {
         assert_eq!(
-            parse("--input ~/test.lcov --input ~/test2.lcov")
+            parse("--output output --input ~/test.lcov --input ~/test2.lcov")
                 .unwrap()
-                .build(),
+                .build()
+                .unwrap(),
             Config {
+                output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
                     Input::LcovPath(PathBuf::from("~/test.lcov")),
@@ -213,8 +265,12 @@ mod test {
     #[test]
     fn when_specifying_single_input_with_2_parts_it_shall_create_a_named_input() {
         assert_eq!(
-            parse("--input named_root ~/test.lcov").unwrap().build(),
+            parse("--output output --input named_root ~/test.lcov")
+                .unwrap()
+                .build()
+                .unwrap(),
             Config {
+                output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::WithName(
                     "named_root".to_string(),
@@ -227,10 +283,12 @@ mod test {
     #[test]
     fn when_specifying_single_input_with_3_parts_it_shall_create_a_named_input_with_prefix() {
         assert_eq!(
-            parse("--input named_root /foo/bar ~/test.lcov")
+            parse("--output output --input named_root /foo/bar ~/test.lcov")
                 .unwrap()
-                .build(),
+                .build()
+                .unwrap(),
             Config {
+                output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::WithPrefix(
                     "named_root".to_string(),
@@ -245,10 +303,11 @@ mod test {
     fn when_specifying_multiple_inputs_with_different_number_of_parts_it_shall_create_each_one_with_correct_variant(
     ) {
         assert_eq!(
-            parse("--input named_root_1 ~/test.lcov --input ~/test2.lcov --input named_root_3 /foo/bar ~/test3.lcov")
+            parse("--output output --input named_root_1 ~/test.lcov --input ~/test2.lcov --input named_root_3 /foo/bar ~/test3.lcov")
                 .unwrap()
-                .build(),
+                .build().unwrap(),
             Config {
+                output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
                     Input::WithName("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
