@@ -2,9 +2,12 @@ use std::path::PathBuf;
 
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 
-use crate::core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath};
+use crate::{
+    core::{AggregatedCoverage, TestedContainer, TestedFile, WithPath},
+    input::aggregator_input::AggregatorInput,
+};
 
-use super::{input::AggregatorInput, tested_file::TestedCodeFile, tested_module::TestedModule};
+use super::{tested_file::TestedCodeFile, tested_module::TestedModule};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct TestedRoot {

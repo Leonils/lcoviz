@@ -7,7 +7,6 @@ pub mod html {
 
 pub mod aggregation {
     mod aggregated;
-    pub mod input;
     pub mod multi_report;
     pub mod tested_file;
     mod tested_module;
@@ -41,11 +40,15 @@ pub mod adapters {
         pub mod mpa;
         pub mod mpa_links;
     }
+
+    pub mod cli {
+        pub mod parser;
+    }
 }
 
-pub mod cli {
+pub mod input {
+    pub mod aggregator_input;
     pub mod config;
-    pub mod parser;
 }
 
 #[cfg(test)]

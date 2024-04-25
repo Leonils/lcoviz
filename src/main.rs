@@ -1,55 +1,27 @@
 use lcov_aggregator_report::{
     adapters::{
+        cli::parser::{CliCommand, CliConfigParser},
         exporters::{mpa::MpaExporter, mpa_links::MpaLinksComputer},
         renderers::html_light_renderer::HtmlLightRenderer,
     },
-    aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
-    cli::{
-        config::Config,
-        parser::{CliCommand, CliConfigParser},
-    },
+    aggregation::{multi_report::MultiReport, tested_root::TestedRoot},
     core::{Exporter, LocalFileSystem},
+    input::{aggregator_input::AggregatorInput, config::Config},
 };
-use std::{collections::HashMap, env::args, error::Error, path::PathBuf};
+use std::{env::args, error::Error, path::PathBuf};
 
 fn handle_multi_report(config: Config) -> Result<MultiReport, Box<dyn Error>> {
-    let mut report_names = HashMap::<String, u32>::new();
-    let mut report_inputs = Vec::<AggregatorInput>::new();
-
-    for config_input in config.inputs.into_iter() {
-        let aggregator_input = AggregatorInput::from_config_input(config_input);
-        let wanted_key = aggregator_input.last_part_of_prefix().to_string();
-        report_names
-            .entry(wanted_key)
-            .and_modify(|e| *e += 1)
-            .or_insert(1);
-        report_inputs.push(aggregator_input);
-    }
-
     let mut multi_report = MultiReport::new(&config.name);
-    let mut dedup_counters = HashMap::<String, u32>::new();
-    for mut input in report_inputs {
-        let key = input.last_part_of_prefix().to_string();
-        let count = report_names.get(&key).unwrap().to_owned();
-        let key = if count > 1 {
-            let c = dedup_counters
-                .entry(key.clone())
-                .and_modify(|e| *e += 1)
-                .or_insert(1);
-            format!("{}_{}", key, c)
-        } else {
-            key
-        };
-        input = input.with_key(&key);
+    for input in AggregatorInput::build_from_inputs(config.inputs, &LocalFileSystem) {
         multi_report.add_report(TestedRoot::new(input));
     }
-
     Ok(multi_report)
 }
 
 fn handle_single_report(config: Config) -> Result<TestedRoot, Box<dyn Error>> {
     let input = config.inputs.into_iter().next().unwrap();
-    let aggregator_input = AggregatorInput::from_config_input(input).with_name(&config.name);
+    let aggregator_input =
+        AggregatorInput::from_config_input(input, &LocalFileSystem).with_name(&config.name);
     let tested_root = TestedRoot::new(aggregator_input);
     Ok(tested_root)
 }

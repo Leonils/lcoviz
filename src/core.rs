@@ -111,6 +111,7 @@ pub trait LinksComputer {
 pub trait FileSystem {
     fn create_dir_all(&self, path: &Path) -> Result<(), Box<dyn Error>>;
     fn write_all(&self, path: &Path, content: &str) -> Result<(), Box<dyn Error>>;
+    fn read_to_string(&self, path: &Path) -> Result<String, Box<dyn Error>>;
 }
 pub struct LocalFileSystem;
 impl FileSystem for LocalFileSystem {
@@ -123,5 +124,9 @@ impl FileSystem for LocalFileSystem {
         let mut f = std::fs::File::create(path)?;
         f.write_all(content.as_bytes())?;
         Ok(())
+    }
+
+    fn read_to_string(&self, path: &Path) -> Result<String, Box<dyn Error>> {
+        Ok(std::fs::read_to_string(path)?)
     }
 }

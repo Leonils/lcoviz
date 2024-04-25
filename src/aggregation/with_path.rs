@@ -66,13 +66,15 @@ mod test {
 
     use crate::{
         aggregation::{
-            input::AggregatorInput, multi_report::MultiReport, tested_file::TestedCodeFile,
-            tested_module::TestedModule, tested_root::TestedRoot,
+            multi_report::MultiReport, tested_file::TestedCodeFile, tested_module::TestedModule,
+            tested_root::TestedRoot,
         },
         core::WithPath,
     };
 
     mod path {
+        use crate::input::aggregator_input::AggregatorInput;
+
         use super::*;
 
         #[test]
@@ -111,6 +113,8 @@ mod test {
     }
 
     mod relative_path {
+        use crate::input::aggregator_input::AggregatorInput;
+
         use super::*;
 
         #[test]
@@ -213,6 +217,8 @@ mod test {
     }
 
     mod names {
+        use crate::input::aggregator_input::AggregatorInput;
+
         use super::*;
 
         #[test]

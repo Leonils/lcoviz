@@ -1,7 +1,12 @@
-use lcov::report::section::{Key as SectionKey, Value as SectionValue};
-use std::collections::BTreeMap;
+use lcov::{
+    report::section::{Key as SectionKey, Value as SectionValue},
+    Reader, Report as LcovReport,
+};
+use std::collections::{BTreeMap, HashMap};
 
-use crate::cli::config::Input;
+use crate::core::FileSystem;
+
+use super::config::Input;
 
 pub struct AggregatorInput {
     report: lcov::report::Report,
@@ -11,7 +16,7 @@ pub struct AggregatorInput {
 }
 
 impl AggregatorInput {
-    pub fn new(report: lcov::report::Report) -> Self {
+    pub fn new(report: LcovReport) -> Self {
         Self {
             report,
             prefix: String::new(),
@@ -20,8 +25,10 @@ impl AggregatorInput {
         }
     }
 
-    pub fn from_config_input(input: Input) -> Self {
-        let report = lcov::Report::from_file(input.path).unwrap();
+    pub fn from_config_input(input: Input, fs: &impl FileSystem) -> Self {
+        let report_content = fs.read_to_string(&input.path).unwrap();
+        let reader = Reader::new(report_content.as_bytes());
+        let report = LcovReport::from_reader(reader).unwrap();
         let aggregator_input = Self::new(report);
         let aggregator_input = match input.prefix {
             Some(prefix) => aggregator_input.with_prefix(prefix.to_str().unwrap()),
@@ -140,11 +147,46 @@ impl AggregatorInput {
     pub fn last_part_of_prefix(&self) -> &str {
         self.prefix.split('/').last().unwrap_or("")
     }
+
+    pub fn build_from_inputs(inputs: Vec<Input>, fs: &impl FileSystem) -> Vec<AggregatorInput> {
+        let mut report_names = HashMap::<String, u32>::new();
+        let mut report_inputs = Vec::<AggregatorInput>::new();
+
+        for config_input in inputs.into_iter() {
+            let aggregator_input = AggregatorInput::from_config_input(config_input, fs);
+            let wanted_key = aggregator_input.last_part_of_prefix().to_string();
+            report_names
+                .entry(wanted_key)
+                .and_modify(|e| *e += 1)
+                .or_insert(1);
+            report_inputs.push(aggregator_input);
+        }
+
+        let mut inputs_with_key = Vec::<AggregatorInput>::new();
+        let mut dedup_counters = HashMap::<String, u32>::new();
+        for input in report_inputs {
+            let key = input.last_part_of_prefix().to_string();
+            let count = report_names.get(&key).unwrap().to_owned();
+            let key = if count > 1 {
+                let c = dedup_counters
+                    .entry(key.clone())
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
+                format!("{}_{}", key, c)
+            } else {
+                key
+            };
+            inputs_with_key.push(input.with_key(&key));
+        }
+
+        inputs_with_key
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{aggregation::input::AggregatorInput, test_utils::builders::InsertSection};
+    use super::*;
+    use crate::{core::MockFileSystem, test_utils::builders::InsertSection};
     use lcov::Report;
 
     #[test]
@@ -240,5 +282,43 @@ mod test {
         let report = Report::new();
         let input = AggregatorInput::new(report.clone()).with_prefix("/foo/bar");
         assert_eq!(input.last_part_of_prefix(), "bar");
+    }
+
+    #[test]
+    fn when_creating_aggregator_inputs_from_one_config_input_then_key_is_last_part_of_prefix() {
+        let mut fs = MockFileSystem::new();
+        fs.expect_read_to_string().returning(|_| Ok("".to_string()));
+        let input = vec![Input::from_name_prefix_and_path(
+            "Lib".into(),
+            "project/package_1/src".into(),
+            "./report.info".into(),
+        )];
+        let aggregator_input = AggregatorInput::build_from_inputs(input, &fs);
+
+        assert_eq!(aggregator_input.len(), 1);
+        assert_eq!(aggregator_input[0].get_key(), "src");
+    }
+
+    #[test]
+    fn when_creating_aggregator_inputs_from_two_config_input_with_same_key_then_key_deduplicated() {
+        let mut fs = MockFileSystem::new();
+        fs.expect_read_to_string().returning(|_| Ok("".to_string()));
+        let input = vec![
+            Input::from_name_prefix_and_path(
+                "Lib".into(),
+                "project/package_1/src".into(),
+                "./report.info".into(),
+            ),
+            Input::from_name_prefix_and_path(
+                "Lib".into(),
+                "project/package_2/src".into(),
+                "./report.info".into(),
+            ),
+        ];
+        let aggregator_input = AggregatorInput::build_from_inputs(input, &fs);
+
+        assert_eq!(aggregator_input.len(), 2);
+        assert_eq!(aggregator_input[0].get_key(), "src_1");
+        assert_eq!(aggregator_input[1].get_key(), "src_2");
     }
 }

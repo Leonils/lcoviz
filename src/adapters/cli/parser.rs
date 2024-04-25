@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::config::{Config, Input};
+use crate::input::config::{Config, Input};
 
 #[derive(Debug, PartialEq)]
 pub enum CliCommand {
