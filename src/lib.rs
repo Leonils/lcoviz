@@ -1,60 +1,60 @@
 mod file_provider;
 
 mod html {
-    pub mod colors;
-    pub mod components;
+    pub(crate) mod colors;
+    pub(crate) mod components;
 }
 
 mod aggregation {
     mod aggregated;
-    pub mod multi_report;
-    pub mod tested_file;
+    pub(crate) mod multi_report;
+    pub(crate) mod tested_file;
     mod tested_module;
-    pub mod tested_root;
+    pub(crate) mod tested_root;
     mod with_path;
 
     #[cfg(test)]
-    pub mod fixtures;
+    pub(crate) mod fixtures;
 }
 
 mod core;
 pub mod operations;
 
 pub mod adapters {
-    pub mod renderers {
-        pub mod html_light_renderer;
+    pub(crate) mod renderers {
+        pub(crate) mod html_light_renderer;
 
         mod components {
-            pub mod chip;
-            pub mod code_line;
-            pub mod file_icon;
-            pub mod function;
-            pub mod gauges;
-            pub mod navigation;
+            pub(crate) mod chip;
+            pub(crate) mod code_line;
+            pub(crate) mod file_icon;
+            pub(crate) mod function;
+            pub(crate) mod gauges;
+            pub(crate) mod navigation;
         }
 
         #[cfg(test)]
-        pub mod mock_renderer;
+        pub(crate) mod mock_renderer;
     }
 
-    pub mod exporters {
-        pub mod mpa;
-        pub mod mpa_links;
+    pub(crate) mod exporters {
+        pub(crate) mod mpa;
+        pub(crate) mod mpa_links;
     }
 
     pub mod cli {
-        pub mod cli_output;
+        pub(crate) mod cli_output;
         pub mod parser;
     }
 }
 
 mod input {
-    pub mod aggregator_input;
-    pub mod config;
+    pub(crate) mod aggregator_input;
+    pub(crate) mod config;
 }
 
 #[cfg(test)]
 mod test_utils {
-    pub mod builders;
+    pub(crate) mod builders;
     mod macros;
 }
