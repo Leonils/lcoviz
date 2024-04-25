@@ -31,10 +31,11 @@ impl CliConfigParser {
         self.args = args.to_vec();
 
         while let Some(arg) = self.next() {
-            match arg.as_str() {
-                "--name" => self.set_name()?,
-                "--input" => self.add_input()?,
-                "--output" => self.set_output()?,
+            let arg_str = arg.as_str();
+            match arg_str {
+                "--name" | "-n" => self.set_name(arg_str)?,
+                "--input" | "-i" => self.add_input(arg_str)?,
+                "--output" | "-o" => self.set_output(arg_str)?,
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
@@ -73,20 +74,20 @@ impl CliConfigParser {
 
     fn get_next_value(&mut self, arg_name: &str) -> Result<String, String> {
         match self.next() {
-            Some(value) if !value.starts_with("--") => Ok(value.clone()),
+            Some(value) if !value.starts_with("-") => Ok(value.clone()),
             _ => Err(format!("Argument {} requires a value", arg_name)),
         }
     }
 
-    fn extract_input_args(&mut self) -> Result<Input, String> {
-        let arg1 = self.get_next_value("--input")?;
-        let arg2 = self.get_next_value("--input");
+    fn extract_input_args(&mut self, arg_name: &str) -> Result<Input, String> {
+        let arg1 = self.get_next_value(arg_name)?;
+        let arg2 = self.get_next_value(arg_name);
         if arg2.is_err() {
             self.previous();
             return Ok(Input::LcovPath(PathBuf::from(arg1)));
         }
 
-        let arg3 = self.get_next_value("--input");
+        let arg3 = self.get_next_value(arg_name);
         if arg3.is_err() {
             self.previous();
             return Ok(Input::WithName(arg1, PathBuf::from(arg2.unwrap())));
@@ -99,25 +100,25 @@ impl CliConfigParser {
         ))
     }
 
-    fn add_input(&mut self) -> Result<(), String> {
-        let input = self.extract_input_args()?;
+    fn add_input(&mut self, arg_name: &str) -> Result<(), String> {
+        let input = self.extract_input_args(arg_name)?;
         self.inputs.push(input);
         Ok(())
     }
 
-    fn set_name(&mut self) -> Result<(), String> {
-        let name = self.get_next_value("--name")?;
+    fn set_name(&mut self, arg_name: &str) -> Result<(), String> {
+        let name = self.get_next_value(arg_name)?;
         if self.name.is_some() {
-            return Err("Argument --name already provided".to_string());
+            return Err(format!("Argument {} already provided", arg_name));
         }
         self.name = Some(name);
         Ok(())
     }
 
-    fn set_output(&mut self) -> Result<(), String> {
-        let output = self.get_next_value("--output")?;
+    fn set_output(&mut self, arg_name: &str) -> Result<(), String> {
+        let output = self.get_next_value(arg_name)?;
         if self.output.is_some() {
-            return Err("Argument --output already provided".to_string());
+            return Err(format!("Argument {} already provided", arg_name));
         }
         self.output = Some(PathBuf::from(output));
         Ok(())
@@ -319,6 +320,48 @@ mod test {
                     )
                 ]
             }
+        );
+    }
+
+    #[test]
+    fn when_using_short_input_command_it_shall_parse_it_correctly() {
+        assert_eq!(
+            parse("-o output -i named_root_1 ~/test.lcov -i ~/test2.lcov -i named_root_3 /foo/bar ~/test3.lcov")
+                .unwrap()
+                .build().unwrap(),
+            Config {
+                output: PathBuf::from("output"),
+                name: "Test report".to_string(),
+                inputs: vec![
+                    Input::WithName("named_root_1".to_string(), PathBuf::from("~/test.lcov")),
+                    Input::LcovPath(PathBuf::from("~/test2.lcov")),
+                    Input::WithPrefix(
+                        "named_root_3".to_string(),
+                        PathBuf::from("/foo/bar"),
+                        PathBuf::from("~/test3.lcov")
+                    )
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn when_using_short_name_and_output_command_it_shall_parse_it_correctly() {
+        assert_eq!(
+            parse("-o output -n test").unwrap().build().unwrap(),
+            Config {
+                output: PathBuf::from("output"),
+                name: "test".to_string(),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn when_using_short_commands_it_shall_detect_next_option_not_as_a_value() {
+        assert_eq!(
+            parse("-n -i ~/test.lcov").unwrap_err(),
+            "Argument -n requires a value"
         );
     }
 }
