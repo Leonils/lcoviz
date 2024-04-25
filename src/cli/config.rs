@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub name: Option<String>,
     pub prefix: Option<PathBuf>,
@@ -32,7 +32,7 @@ impl Input {
     }
 }
 
-#[derive(Debug, PartialEq, Default, Deserialize)]
+#[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Config {
     pub name: String,
     pub inputs: Vec<Input>,

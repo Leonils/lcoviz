@@ -2,6 +2,13 @@ use std::path::PathBuf;
 
 use super::config::{Config, Input};
 
+#[derive(Debug, PartialEq)]
+pub enum CliCommand {
+    Report(Config),
+    FromFile(PathBuf),
+    ToFile(PathBuf, Config),
+}
+
 #[derive(Debug, PartialEq, Default)]
 pub struct CliConfigParser {
     args: Vec<String>,
@@ -9,6 +16,8 @@ pub struct CliConfigParser {
     name: Option<String>,
     inputs: Vec<Input>,
     output: Option<PathBuf>,
+    command: Option<String>,
+    config_file: Option<PathBuf>,
 }
 impl CliConfigParser {
     pub fn new() -> Self {
@@ -18,6 +27,35 @@ impl CliConfigParser {
     pub fn parse(mut self, args: &[String]) -> Result<Self, String> {
         self.args = args.to_vec();
 
+        let command = self.next().ok_or("No command provided")?;
+        match command.as_str() {
+            "report" => {
+                self.command = Some("report".to_string());
+                self.parse_report_command()?
+            }
+            "from-file" => {
+                let config_file = self.get_next_value("from-file")?;
+                self.config_file = Some(PathBuf::from(config_file));
+                self.command = Some("from-file".to_string());
+                if self.args.len() > self.step {
+                    return Err("No other arguments are allowed with from-file command".to_string());
+                }
+                return Ok(self);
+            }
+            "to-file" => {
+                let config_file = self.get_next_value("to-file")?;
+                self.config_file = Some(PathBuf::from(config_file));
+                self.command = Some("to-file".to_string());
+                self.parse_report_command()?;
+                return Ok(self);
+            }
+            _ => return Err(format!("Unknown command: {}", command)),
+        }
+
+        Ok(self)
+    }
+
+    fn parse_report_command(&mut self) -> Result<(), String> {
         while let Some(arg) = self.next() {
             let arg_str = arg.as_str();
             match arg_str {
@@ -27,8 +65,7 @@ impl CliConfigParser {
                 _ => return Err(format!("Unknown argument: {}", arg)),
             }
         }
-
-        Ok(self)
+        Ok(())
     }
 
     fn next(&mut self) -> Option<String> {
@@ -48,7 +85,7 @@ impl CliConfigParser {
         }
     }
 
-    pub fn build(self) -> Result<Config, String> {
+    fn build_config(self) -> Result<Config, String> {
         let output = self
             .output
             .ok_or_else(|| "Argument --output is required".to_string())?;
@@ -58,6 +95,23 @@ impl CliConfigParser {
             inputs: self.inputs,
             output,
         })
+    }
+
+    pub fn build(self) -> Result<CliCommand, String> {
+        let config_file = self.config_file.clone();
+
+        match self.command.as_deref() {
+            Some("report") => self.build_config().map(CliCommand::Report),
+            Some("from-file") => config_file
+                .clone()
+                .map(CliCommand::FromFile)
+                .ok_or("Argument --from-file is required".to_string()),
+            Some("to-file") => self
+                .build_config()
+                .map(|config| CliCommand::ToFile(config_file.unwrap(), config))
+                .map_err(|e| format!("Argument --to-file is required: {}", e)),
+            _ => Err("No command provided".to_string()),
+        }
     }
 
     fn get_next_value(&mut self, arg_name: &str) -> Result<String, String> {
@@ -137,19 +191,19 @@ mod test {
     #[test]
     fn when_providing_output_only_it_shall_set_default_name() {
         assert_eq!(
-            parse("--output output").unwrap().build().unwrap(),
-            Config {
+            parse("report --output output").unwrap().build().unwrap(),
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn when_output_is_missing_it_shall_fail_to_build() {
         assert_eq!(
-            parse("--name test").unwrap().build().unwrap_err(),
+            parse("report --name test").unwrap().build().unwrap_err(),
             "Argument --output is required"
         );
     }
@@ -157,22 +211,22 @@ mod test {
     #[test]
     fn when_providing_name_and_output_it_shall_build_the_config() {
         assert_eq!(
-            parse("--output output --name test")
+            parse("report --output output --name test")
                 .unwrap()
                 .build()
                 .unwrap(),
-            Config {
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "test".to_string(),
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn when_providing_output_without_value_it_shall_return_error() {
         assert_eq!(
-            parse("--output").unwrap_err(),
+            parse("report --output").unwrap_err(),
             "Argument --output requires a value"
         );
     }
@@ -180,7 +234,7 @@ mod test {
     #[test]
     fn when_providing_output_twice_it_shall_return_error() {
         assert_eq!(
-            parse("--output output --output output2").unwrap_err(),
+            parse("report --output output --output output2").unwrap_err(),
             "Argument --output already provided"
         );
     }
@@ -188,7 +242,7 @@ mod test {
     #[test]
     fn when_providing_2_names_it_shall_return_error() {
         assert_eq!(
-            parse("--name test --name test2").unwrap_err(),
+            parse("report --name test --name test2").unwrap_err(),
             "Argument --name already provided"
         );
     }
@@ -196,7 +250,7 @@ mod test {
     #[test]
     fn when_providing_name_without_value_it_shall_return_error() {
         assert_eq!(
-            parse("--name").unwrap_err(),
+            parse("report --name").unwrap_err(),
             "Argument --name requires a value"
         );
     }
@@ -204,7 +258,7 @@ mod test {
     #[test]
     fn when_providing_unknown_argument_it_shall_return_error() {
         assert_eq!(
-            parse("--unknown").unwrap_err(),
+            parse("report --unknown").unwrap_err(),
             "Unknown argument: --unknown"
         );
     }
@@ -212,40 +266,40 @@ mod test {
     #[test]
     fn when_specifying_input_with_single_path_it_shall_add_it_to_config() {
         assert_eq!(
-            parse("--output output  --input ~/test.lcov")
+            parse("report --output output  --input ~/test.lcov")
                 .unwrap()
                 .build()
                 .unwrap(),
-            Config {
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::from_path(PathBuf::from("~/test.lcov"))]
-            }
+            })
         );
     }
 
     #[test]
     fn when_specifying_input_with_multiple_paths_it_shall_add_them_to_config() {
         assert_eq!(
-            parse("--output output --input ~/test.lcov --input ~/test2.lcov")
+            parse("report --output output --input ~/test.lcov --input ~/test2.lcov")
                 .unwrap()
                 .build()
                 .unwrap(),
-            Config {
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
                     Input::from_path(PathBuf::from("~/test.lcov")),
                     Input::from_path(PathBuf::from("~/test2.lcov"))
                 ]
-            }
+            })
         );
     }
 
     #[test]
     fn when_specifying_input_without_value_it_shall_return_error() {
         assert_eq!(
-            parse("--input").unwrap_err(),
+            parse("report --input").unwrap_err(),
             "Argument --input requires a value"
         );
     }
@@ -253,7 +307,7 @@ mod test {
     #[test]
     fn another_arg_shall_not_count_as_a_value_for_name() {
         assert_eq!(
-            parse("--name --input ~/test.lcov").unwrap_err(),
+            parse("report --name --input ~/test.lcov").unwrap_err(),
             "Argument --name requires a value"
         );
     }
@@ -261,29 +315,29 @@ mod test {
     #[test]
     fn when_specifying_single_input_with_2_parts_it_shall_create_a_named_input() {
         assert_eq!(
-            parse("--output output --input named_root ~/test.lcov")
+            parse("report --output output --input named_root ~/test.lcov")
                 .unwrap()
                 .build()
                 .unwrap(),
-            Config {
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::from_name_and_path(
                     "named_root".to_string(),
                     PathBuf::from("~/test.lcov")
                 )]
-            }
+            })
         );
     }
 
     #[test]
     fn when_specifying_single_input_with_3_parts_it_shall_create_a_named_input_with_prefix() {
         assert_eq!(
-            parse("--output output --input named_root /foo/bar ~/test.lcov")
+            parse("report --output output --input named_root /foo/bar ~/test.lcov")
                 .unwrap()
                 .build()
                 .unwrap(),
-            Config {
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![Input::from_name_prefix_and_path(
@@ -291,7 +345,7 @@ mod test {
                     PathBuf::from("/foo/bar"),
                     PathBuf::from("~/test.lcov")
                 )]
-            }
+            })
         );
     }
 
@@ -299,10 +353,10 @@ mod test {
     fn when_specifying_multiple_inputs_with_different_number_of_parts_it_shall_create_each_one_with_correct_variant(
     ) {
         assert_eq!(
-            parse("--output output --input named_root_1 ~/test.lcov --input ~/test2.lcov --input named_root_3 /foo/bar ~/test3.lcov")
+            parse("report --output output --input named_root_1 ~/test.lcov --input ~/test2.lcov --input named_root_3 /foo/bar ~/test3.lcov")
                 .unwrap()
                 .build().unwrap(),
-            Config {
+           CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
@@ -314,17 +368,17 @@ mod test {
                         PathBuf::from("~/test3.lcov")
                     )
                 ]
-            }
+            })
         );
     }
 
     #[test]
     fn when_using_short_input_command_it_shall_parse_it_correctly() {
         assert_eq!(
-            parse("-o output -i named_root_1 ~/test.lcov -i ~/test2.lcov -i named_root_3 /foo/bar ~/test3.lcov")
+            parse("report -o output -i named_root_1 ~/test.lcov -i ~/test2.lcov -i named_root_3 /foo/bar ~/test3.lcov")
                 .unwrap()
                 .build().unwrap(),
-            Config {
+           CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
                 inputs: vec![
@@ -336,26 +390,26 @@ mod test {
                         PathBuf::from("~/test3.lcov")
                     )
                 ]
-            }
+            })
         );
     }
 
     #[test]
     fn when_using_short_name_and_output_command_it_shall_parse_it_correctly() {
         assert_eq!(
-            parse("-o output -n test").unwrap().build().unwrap(),
-            Config {
+            parse("report -o output -n test").unwrap().build().unwrap(),
+            CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "test".to_string(),
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn when_using_short_commands_it_shall_detect_next_option_not_as_a_value() {
         assert_eq!(
-            parse("-n -i ~/test.lcov").unwrap_err(),
+            parse("report -n -i ~/test.lcov").unwrap_err(),
             "Argument -n requires a value"
         );
     }
@@ -378,6 +432,40 @@ mod test {
             )
             .path,
             PathBuf::from("path")
+        );
+    }
+
+    #[test]
+    fn when_running_the_to_file_command_config_shall_be_passed_along_config_path() {
+        assert_eq!(
+            parse("to-file config.toml -o output")
+                .unwrap()
+                .build()
+                .unwrap(),
+            CliCommand::ToFile(
+                PathBuf::from("config.toml"),
+                Config {
+                    output: PathBuf::from("output"),
+                    name: "Test report".to_string(),
+                    ..Default::default()
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn when_running_from_file_command_it_shall_return_the_config_path() {
+        assert_eq!(
+            parse("from-file config.toml").unwrap().build().unwrap(),
+            CliCommand::FromFile(PathBuf::from("config.toml"))
+        );
+    }
+
+    #[test]
+    fn when_running_from_file_command_it_shall_return_error_when_another_argument_is_provided() {
+        assert_eq!(
+            parse("from-file config.toml -o output").unwrap_err(),
+            "No other arguments are allowed with from-file command"
         );
     }
 }

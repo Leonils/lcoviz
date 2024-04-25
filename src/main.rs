@@ -4,10 +4,13 @@ use lcov_aggregator_report::{
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
-    cli::{config::Config, parser::CliConfigParser},
+    cli::{
+        config::Config,
+        parser::{CliCommand, CliConfigParser},
+    },
     core::{Exporter, LocalFileSystem},
 };
-use std::{collections::HashMap, env::args, error::Error};
+use std::{collections::HashMap, env::args, error::Error, path::PathBuf};
 
 fn handle_multi_report(config: Config) -> Result<MultiReport, Box<dyn Error>> {
     let mut report_names = HashMap::<String, u32>::new();
@@ -58,10 +61,7 @@ fn print_status(title: &str, status: &str) {
     println!("{}{}{: >12} {}{}", BOLD, GREEN, title, RESET, status);
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let args = args().skip(1).collect::<Vec<String>>();
-    let config = CliConfigParser::new().parse(&args)?.build()?;
-
+fn run_report(config: Config) -> Result<(), Box<dyn Error>> {
     let links_computer = MpaLinksComputer;
     let file_system = LocalFileSystem;
     let renderer = HtmlLightRenderer::new(links_computer);
@@ -105,6 +105,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         "Success",
         format!("Report generated at {}", output.display()).as_str(),
     );
+
+    Ok(())
+}
+
+fn save_config_to_file(config: Config, path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    let config_str = toml::to_string(&config)?;
+    if path.exists() {
+        println!("File already exists, overwriting it?");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if input.to_lowercase().trim() != "y" {
+            println!("Aborting");
+        }
+    }
+    if path.parent().is_some() {
+        std::fs::create_dir_all(path.parent().unwrap())?;
+    }
+    std::fs::write(path, config_str)?;
+    Ok(())
+}
+
+fn read_config_from_file(path: &PathBuf) -> Result<Config, Box<dyn Error>> {
+    let config_str = std::fs::read_to_string(path)?;
+    let config = toml::from_str::<Config>(&config_str)?;
+    Ok(config)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = args().skip(1).collect::<Vec<String>>();
+    let command = CliConfigParser::new().parse(&args)?.build()?;
+
+    match command {
+        CliCommand::Report(config) => run_report(config)?,
+        CliCommand::ToFile(path, config) => save_config_to_file(config, &path)?,
+        CliCommand::FromFile(path) => {
+            let config = read_config_from_file(&path)?;
+            run_report(config)?;
+        }
+    }
 
     Ok(())
 }
