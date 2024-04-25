@@ -2,18 +2,19 @@ use std::include_str;
 
 use crate::{
     core::{
-        AggregatedCoverage, AggregatedCoverageCounters, LinkPayload, LinksComputer, Renderer,
-        TestedContainer, TestedFile, WithPath,
+        AggregatedCoverage, AggregatedCoverageCounters, FileLinesProvider, LinkPayload,
+        LinksComputer, Renderer, TestedContainer, TestedFile, WithPath,
     },
-    file_provider::FileLinesProvider,
     html::{
         colors::{get_percentage_class, render_optional_percentage},
-        components::{Div, Img, Link, Pre, Row, Table, Text, ToHtml},
+        components::{Div, Img, Link, Text, ToHtml},
     },
 };
 
 use super::{
-    components::{chip::render_aggregated_coverage_chips, gauges::CoverageGauges},
+    components::{
+        chip::render_aggregated_coverage_chips, code_line::CodeLines, gauges::CoverageGauges,
+    },
     file_icon::FileIcon,
 };
 
@@ -173,33 +174,6 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                     .with_children(submodules)
                     .with_children(files),
             )
-    }
-
-    fn render_line(line_number: u32, file: &impl TestedFile, line: String) -> Row {
-        let coverage = file.get_line_coverage(line_number as u32);
-
-        let class = match coverage {
-            Some(cov) if cov > 0 => "line-covered",
-            Some(_) => "line-not-covered",
-            None => "line-not-tested",
-        };
-
-        Row::new()
-            .with_class(class)
-            .with_cell(Text::new(&line_number.to_string()))
-            .with_cell(Text::new(
-                &coverage.map(|c| c.to_string()).unwrap_or_default(),
-            ))
-            .with_cell(Pre::new(&line))
-    }
-
-    fn render_lines(file: &impl TestedFile, lines: Vec<String>) -> Table {
-        let rows = lines
-            .iter()
-            .enumerate()
-            .map(|(i, line)| Self::render_line(i as u32 + 1, file, line.clone()));
-
-        Table::new().with_rows(rows)
     }
 
     fn render_functions(&self, file: &impl TestedFile) -> Div {
@@ -395,7 +369,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_child(
                         Div::new()
                             .with_class("lines")
-                            .with_child(Self::render_lines(file, lines)),
+                            .with_child(CodeLines::new(file, lines)),
                     ),
             )
             .with_child(

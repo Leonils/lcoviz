@@ -1,7 +1,4 @@
-use crate::{
-    core::{Renderer, TestedContainer, TestedFile, WithPath},
-    file_provider::FileLinesProvider,
-};
+use crate::core::{FileLinesProvider, Renderer, TestedContainer, TestedFile, WithPath};
 
 pub struct MockRenderer;
 impl Renderer for MockRenderer {

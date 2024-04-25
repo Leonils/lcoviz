@@ -9,7 +9,10 @@ use mockall::automock;
 
 use pathdiff::diff_paths;
 
-use crate::file_provider::FileLinesProvider;
+#[cfg_attr(test, automock)]
+pub trait FileLinesProvider {
+    fn get_file_lines(&self) -> Result<Vec<String>, std::io::Error>;
+}
 
 #[derive(Default, Debug, PartialEq)]
 pub struct AggregatedCoverageCounters {

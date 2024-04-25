@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
-pub trait FileLinesProvider {
-    fn get_file_lines(&self) -> Result<Vec<String>, std::io::Error>;
-}
+use crate::core::FileLinesProvider;
 
 pub struct LocalFileLinesProvider {
     file_path: PathBuf,

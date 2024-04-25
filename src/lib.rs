@@ -9,7 +9,7 @@ pub mod aggregation {
     mod aggregated;
     pub mod input;
     pub mod multi_report;
-    mod tested_file;
+    pub mod tested_file;
     mod tested_module;
     pub mod tested_root;
     pub mod with_path;
@@ -27,6 +27,7 @@ pub mod adapters {
 
         pub mod components {
             pub mod chip;
+            pub mod code_line;
             pub mod gauges;
         }
 
@@ -43,4 +44,5 @@ pub mod adapters {
 #[cfg(test)]
 pub mod test_utils {
     pub mod builders;
+    pub mod macros;
 }
