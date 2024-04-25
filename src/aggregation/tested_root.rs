@@ -19,13 +19,12 @@ pub struct TestedRoot {
 impl TestedRoot {
     pub fn new(args: AggregatorInput) -> Self {
         let prefix_path = PathBuf::from(args.get_prefix());
-        let name = prefix_path
-            .components()
-            .last()
-            .map(|c| c.as_os_str().to_str())
-            .flatten()
-            .unwrap_or("Test report");
+        let name = args.get_name();
 
+        println!(
+            "Creating root with prefix: {:?} and name {:?}",
+            prefix_path, name
+        );
         let mut tree = TestedRoot {
             aggregated: AggregatedCoverage::default(),
             prefix: prefix_path.to_owned(),

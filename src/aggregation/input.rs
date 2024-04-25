@@ -1,9 +1,12 @@
 use lcov::report::section::{Key as SectionKey, Value as SectionValue};
 use std::collections::BTreeMap;
 
+use crate::cli::parser::Input;
+
 pub struct AggregatorInput {
     report: lcov::report::Report,
     prefix: String,
+    name: Option<String>,
     key: String,
 }
 
@@ -13,6 +16,20 @@ impl AggregatorInput {
             report,
             prefix: String::new(),
             key: String::new(),
+            name: None,
+        }
+    }
+
+    pub fn from_config_input(input: &Input) -> Self {
+        let report = lcov::Report::from_file(input.get_path()).unwrap();
+        match input {
+            Input::LcovPath(_) => AggregatorInput::new(report).with_longest_prefix(),
+            Input::WithName(name, _) => AggregatorInput::new(report)
+                .with_longest_prefix()
+                .with_name(&name),
+            Input::WithPrefix(name, prefix, _) => AggregatorInput::new(report)
+                .with_prefix(prefix.to_str().unwrap())
+                .with_name(&name),
         }
     }
 
@@ -46,6 +63,7 @@ impl AggregatorInput {
             report: self.report,
             prefix: prefix.to_string(),
             key: self.key,
+            name: self.name,
         }
     }
 
@@ -54,6 +72,7 @@ impl AggregatorInput {
             report: self.report,
             prefix: self.prefix,
             key: key.to_string(),
+            name: self.name,
         }
     }
 
@@ -93,10 +112,13 @@ impl AggregatorInput {
 
     pub fn with_longest_prefix(self) -> AggregatorInput {
         let prefix = self.find_longest_prefix();
+        AggregatorInput { prefix, ..self }
+    }
+
+    pub fn with_name(self, name: &str) -> AggregatorInput {
         AggregatorInput {
-            report: self.report,
-            prefix,
-            key: self.key,
+            name: Some(name.to_string()),
+            ..self
         }
     }
 
@@ -106,6 +128,12 @@ impl AggregatorInput {
 
     pub fn get_key(&self) -> &str {
         &self.key
+    }
+
+    pub fn get_name(&self) -> &str {
+        self.name
+            .as_deref()
+            .unwrap_or_else(|| self.last_part_of_prefix())
     }
 
     pub fn last_part_of_prefix(&self) -> &str {

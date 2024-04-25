@@ -5,17 +5,17 @@ use lcov_aggregator_report::{
         renderers::html_light_renderer::HtmlLightRenderer,
     },
     aggregation::{input::AggregatorInput, multi_report::MultiReport, tested_root::TestedRoot},
-    cli::parser::CliConfigParser,
+    cli::parser::{CliConfigParser, Config, Input},
     core::{Exporter, LocalFileSystem},
 };
-use std::{collections::HashMap, env::args, error::Error, path::PathBuf};
+use std::{collections::HashMap, env::args, error::Error};
 
-fn handle_multi_report(input_paths: Vec<PathBuf>) -> Result<MultiReport, Box<dyn Error>> {
+fn handle_multi_report(config: &Config) -> Result<MultiReport, Box<dyn Error>> {
     let mut report_names = HashMap::<String, u32>::new();
     let mut report_inputs = Vec::<AggregatorInput>::new();
-    for input_path in input_paths {
-        let other_report = Report::from_file(input_path)?;
-        let aggregator_input = AggregatorInput::new(other_report).with_longest_prefix();
+
+    for config_input in config.inputs.iter() {
+        let aggregator_input = AggregatorInput::from_config_input(config_input);
         let wanted_key = aggregator_input.last_part_of_prefix().to_string();
         report_names
             .entry(wanted_key)
@@ -24,7 +24,7 @@ fn handle_multi_report(input_paths: Vec<PathBuf>) -> Result<MultiReport, Box<dyn
         report_inputs.push(aggregator_input);
     }
 
-    let mut multi_report = MultiReport::new();
+    let mut multi_report = MultiReport::new(&config.name);
     let mut dedup_counters = HashMap::<String, u32>::new();
     for mut input in report_inputs {
         let key = input.last_part_of_prefix().to_string();
@@ -45,9 +45,9 @@ fn handle_multi_report(input_paths: Vec<PathBuf>) -> Result<MultiReport, Box<dyn
     Ok(multi_report)
 }
 
-fn handle_single_report(input_path: &PathBuf) -> Result<TestedRoot, Box<dyn Error>> {
-    let input = Report::from_file(input_path)?;
-    let aggregator_input = AggregatorInput::new(input).with_longest_prefix();
+fn handle_single_report(config: &Config) -> Result<TestedRoot, Box<dyn Error>> {
+    let input = config.inputs.first().unwrap();
+    let aggregator_input = AggregatorInput::from_config_input(input);
     let tested_root = TestedRoot::new(aggregator_input);
     Ok(tested_root)
 }
@@ -66,23 +66,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let links_computer = MpaLinksComputer;
     let file_system = LocalFileSystem;
     let renderer = HtmlLightRenderer::new(links_computer);
-    let input_paths = config
-        .inputs
-        .iter()
-        .map(|p| p.get_path())
-        .collect::<Vec<PathBuf>>();
 
     print_status(
         "Generating report",
-        format!("for {} input(s)", input_paths.len()).as_str(),
+        format!("for {} input(s)", config.inputs.len()).as_str(),
     );
 
     if config.inputs.len() != 1 {
-        let multi_report = handle_multi_report(input_paths)?;
+        let multi_report = handle_multi_report(&config)?;
         let exporter = MpaExporter::new(renderer, multi_report, &config.output, &file_system);
         exporter.render_root();
     } else {
-        let root = handle_single_report(input_paths.first().unwrap())?;
+        let root = handle_single_report(&config)?;
         let exporter = MpaExporter::new(renderer, root, &config.output, &file_system);
         exporter.render_root();
     };

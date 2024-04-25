@@ -20,7 +20,7 @@ impl WithPath for TestedCodeFile {
 
 impl WithPath for MultiReport {
     fn get_name(&self) -> &str {
-        "MultiReport"
+        self.get_multi_report_name()
     }
 
     fn get_path_string(&self) -> String {
@@ -105,7 +105,7 @@ mod test {
 
         #[test]
         fn when_getting_path_of_multi_report_it_shall_return_empty() {
-            let multi_report = MultiReport::new();
+            let multi_report = MultiReport::new("name");
             assert_eq!(multi_report.get_path_string(), "");
         }
     }
@@ -207,7 +207,7 @@ mod test {
 
         #[test]
         fn multi_report_are_directories() {
-            let multi_report = MultiReport::new();
+            let multi_report = MultiReport::new("name");
             assert!(multi_report.is_dir());
         }
     }
@@ -239,7 +239,7 @@ mod test {
 
         #[test]
         fn test_multi_report_name_is_multi_report() {
-            let multi_report = MultiReport::new();
+            let multi_report = MultiReport::new("name");
             assert_eq!(multi_report.get_name(), "MultiReport");
         }
     }

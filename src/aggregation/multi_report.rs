@@ -3,13 +3,15 @@ use crate::core::{AggregatedCoverage, TestedContainer, TestedFile};
 use super::{tested_file::TestedCodeFile, tested_root::TestedRoot};
 
 pub struct MultiReport {
+    name: String,
     reports: Vec<TestedRoot>,
     aggregated: AggregatedCoverage,
 }
 
 impl MultiReport {
-    pub fn new() -> Self {
+    pub fn new(name: &str) -> Self {
         MultiReport {
+            name: name.to_string(),
             reports: Vec::new(),
             aggregated: AggregatedCoverage::default(),
         }
@@ -18,6 +20,10 @@ impl MultiReport {
     pub fn add_report(&mut self, report: TestedRoot) {
         self.aggregated.add(&report.get_aggregated_coverage());
         self.reports.push(report);
+    }
+
+    pub fn get_multi_report_name(&self) -> &str {
+        &self.name
     }
 }
 
