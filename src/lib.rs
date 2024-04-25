@@ -30,6 +30,7 @@ pub mod adapters {
             pub mod code_line;
             pub mod function;
             pub mod gauges;
+            pub mod navigation;
         }
 
         #[cfg(test)]

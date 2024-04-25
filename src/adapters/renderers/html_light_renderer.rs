@@ -2,8 +2,8 @@ use std::include_str;
 
 use crate::{
     core::{
-        AggregatedCoverage, AggregatedCoverageCounters, FileLinesProvider, LinkPayload,
-        LinksComputer, Renderer, TestedContainer, TestedFile, WithPath,
+        AggregatedCoverage, AggregatedCoverageCounters, FileLinesProvider, LinksComputer, Renderer,
+        TestedContainer, TestedFile, WithPath,
     },
     html::{
         colors::{get_percentage_class, render_optional_percentage},
@@ -14,7 +14,7 @@ use crate::{
 use super::{
     components::{
         chip::render_aggregated_coverage_chips, code_line::CodeLines, function::FunctionDefs,
-        gauges::CoverageGauges,
+        gauges::CoverageGauges, navigation::Navigation,
     },
     file_icon::FileIcon,
 };
@@ -191,38 +191,6 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
         FunctionDefs::new(file, covered_svg, uncovered_svg)
     }
 
-    fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
-        let links = self
-            .links_computer
-            .get_links_from_file(root, file)
-            .collect::<Vec<LinkPayload>>();
-
-        if links.is_empty() {
-            return Div::new();
-        }
-
-        let links = links
-            .into_iter()
-            .map(|link| {
-                vec![
-                    Div::new()
-                        .with_class("navigation-part")
-                        .with_child(Link::from_link_payload(link)),
-                    Div::new().with_text(" / "),
-                ]
-            })
-            .flatten();
-
-        Div::new()
-            .with_class("navigation")
-            .with_children(links)
-            .with_child(
-                Div::new()
-                    .with_class("navigation-part")
-                    .with_text(file.get_name()),
-            )
-    }
-
     fn render_layout(&self, current: &impl WithPath, content: String) -> String {
         return format!(
             "<html>
@@ -294,7 +262,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                 .with_class("top-module-card")
                 .with_class("header")
                 .with_child(self.render_title_with_img(module, "module-main.svg"))
-                .with_child(self.render_navigation(root, module))
+                .with_child(Navigation::new(&self.links_computer, root, module))
                 .with_child(CoverageGauges::new(module.get_aggregated_coverage(), true)),
         );
         if module.get_code_file_children().count() > 0 {
@@ -331,7 +299,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                         file,
                         FileIcon::get_icon_key(file).unwrap_or_default(),
                     ))
-                    .with_child(self.render_navigation(root, file))
+                    .with_child(Navigation::new(&self.links_computer, root, file))
                     .with_child(CoverageGauges::new(file.get_aggregated_coverage(), true)),
             )
             .with_child(
