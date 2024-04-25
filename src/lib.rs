@@ -18,6 +18,7 @@ pub mod aggregation {
 }
 
 pub mod core;
+pub mod operations;
 
 pub mod adapters {
     pub mod renderers {
@@ -42,6 +43,7 @@ pub mod adapters {
     }
 
     pub mod cli {
+        pub mod cli_output;
         pub mod parser;
     }
 }
