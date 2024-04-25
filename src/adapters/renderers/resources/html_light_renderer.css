@@ -232,6 +232,8 @@ a:hover {
 }
 .function-covered > .function-name {
   background-color: #b6efb6;
+  max-width: calc(100% - 140px);
+  word-wrap: break-word;
 }
 .function-uncovered > .function-name {
   background-color: #ffb7b7;

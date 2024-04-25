@@ -28,6 +28,7 @@ pub mod adapters {
         pub mod components {
             pub mod chip;
             pub mod code_line;
+            pub mod function;
             pub mod gauges;
         }
 

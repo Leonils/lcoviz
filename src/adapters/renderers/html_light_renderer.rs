@@ -13,7 +13,8 @@ use crate::{
 
 use super::{
     components::{
-        chip::render_aggregated_coverage_chips, code_line::CodeLines, gauges::CoverageGauges,
+        chip::render_aggregated_coverage_chips, code_line::CodeLines, function::FunctionDefs,
+        gauges::CoverageGauges,
     },
     file_icon::FileIcon,
 };
@@ -78,7 +79,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
                 .with_child(
                     Div::new()
                         .with_class("file-logo")
-                        .with_child(Img::new(&img_src, "Rust logo")),
+                        .with_child(Img::new(&img_src, "File logo")),
                 )
                 .with_child(
                     Div::new()
@@ -176,9 +177,10 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             )
     }
 
-    fn render_functions(&self, file: &impl TestedFile) -> Div {
-        let functions = file.get_functions();
-
+    fn render_functions<'a>(
+        &'a self,
+        file: &'a impl TestedFile,
+    ) -> FunctionDefs<'_, impl TestedFile> {
         let covered_svg = self
             .links_computer
             .get_link_to_resource(file, "function_covered.svg");
@@ -186,36 +188,7 @@ impl<TLinksComputer: LinksComputer> HtmlLightRenderer<TLinksComputer> {
             .links_computer
             .get_link_to_resource(file, "function_uncovered.svg");
 
-        let functions = functions.map(|(name, count)| {
-            Div::new()
-                .with_class("function")
-                .with_class(if count > 0 {
-                    "function-covered"
-                } else {
-                    "function-uncovered"
-                })
-                .with_child(Img::new(
-                    if count > 0 {
-                        &covered_svg
-                    } else {
-                        &uncovered_svg
-                    },
-                    "Function coverage",
-                ))
-                .with_child(
-                    Div::new()
-                        .with_class("function-name")
-                        .with_child(Text::new(&name)),
-                )
-                .with_child(Div::new().with_class("fill"))
-                .with_child(
-                    Div::new()
-                        .with_class("function-hit")
-                        .with_child(Text::new(&format!("{} calls", count))),
-                )
-        });
-
-        Div::new().with_children(functions)
+        FunctionDefs::new(file, covered_svg, uncovered_svg)
     }
 
     fn render_navigation(&self, root: &impl WithPath, file: &impl WithPath) -> Div {
@@ -377,11 +350,7 @@ impl<TLinksComputer: LinksComputer> Renderer for HtmlLightRenderer<TLinksCompute
                     .with_class("details-card")
                     .with_id("functions")
                     .with_child(Text::h2("Functions"))
-                    .with_child(
-                        Div::new()
-                            .with_class("functions")
-                            .with_child(self.render_functions(file)),
-                    ),
+                    .with_child(self.render_functions(file)),
             );
 
         self.render_layout(file, main.to_html())
