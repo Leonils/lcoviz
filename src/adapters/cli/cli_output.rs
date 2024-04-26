@@ -31,6 +31,14 @@ impl<TConsole: Printer> CliOutput<TConsole> {
         self.console.println(&message);
     }
 
+    pub fn print_error(&self, error: &str) {
+        const BOLD: &str = "\x1b[1m";
+        const RED: &str = "\x1b[31m";
+        const RESET: &str = "\x1b[0m";
+        let message = format!("{}{}{: >12} {}{}", BOLD, RED, "Error", RESET, error);
+        self.console.println(&message);
+    }
+
     fn print_input(&self, input: &Input) {
         self.print_status(
             "",
@@ -82,6 +90,7 @@ mod test {
                 .withf(move |message| {
                     let message = message.replace("\x1b[1m", "");
                     let message = message.replace("\x1b[32m", "");
+                    let message = message.replace("\x1b[31m", "");
                     let message = message.replace("\x1b[0m", "");
                     let message = message.trim();
                     return message == m;
@@ -116,5 +125,11 @@ mod test {
     fn test_print_conclusion() {
         let console = MockPrinter::new().expect("Success Report generated at test");
         CliOutput::new(console).print_conclusion("test");
+    }
+
+    #[test]
+    fn text_print_error() {
+        let console = MockPrinter::new().expect("Error test");
+        CliOutput::new(console).print_error("test");
     }
 }

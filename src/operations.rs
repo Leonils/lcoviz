@@ -2,7 +2,7 @@ use crate::{
     adapters::{
         cli::{
             cli_output::{CliOutput, Console},
-            parser::CliCommand,
+            parser::{CliCommand, CliConfigParser},
         },
         exporters::{mpa::MpaExporter, mpa_links::MpaLinksComputer, spa::SpaExporter},
         renderers::{
@@ -17,9 +17,9 @@ use crate::{
         config::{Config, Reporter},
     },
 };
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 
-fn build_multi_report_root(config: Config) -> Result<MultiReport, Box<dyn Error>> {
+fn build_multi_report_root(config: Config) -> Result<MultiReport, String> {
     let mut multi_report = MultiReport::new(&config.name);
     for input in AggregatorInput::build_from_inputs(config.inputs, &LocalFileSystem) {
         multi_report.add_report(TestedRoot::new(input));
@@ -27,7 +27,7 @@ fn build_multi_report_root(config: Config) -> Result<MultiReport, Box<dyn Error>
     Ok(multi_report)
 }
 
-fn build_single_report_root(config: Config) -> Result<TestedRoot, Box<dyn Error>> {
+fn build_single_report_root(config: Config) -> Result<TestedRoot, String> {
     let input = config.inputs.into_iter().next().unwrap();
     let aggregator_input =
         AggregatorInput::from_config_input(input, &LocalFileSystem).with_name(&config.name);
@@ -35,80 +35,81 @@ fn build_single_report_root(config: Config) -> Result<TestedRoot, Box<dyn Error>
     Ok(tested_root)
 }
 
-fn export_mpa_html_light_renderer(config: Config) -> Result<(), Box<dyn Error>> {
-    let output = config.output.clone();
-    let links_computer = MpaLinksComputer;
-    let renderer = HtmlLightRenderer::new(links_computer);
-    if config.inputs.len() != 1 {
-        let multi_report = build_multi_report_root(config)?;
-        MpaExporter::new(renderer, multi_report, &output, &LocalFileSystem).render_root();
-    } else {
-        let root = build_single_report_root(config)?;
-        MpaExporter::new(renderer, root, &output, &LocalFileSystem).render_root();
-    };
-    Ok(())
+macro_rules! export {
+    ($exporter_struct: ident, $renderer: expr, $config: expr) => {{
+        let output = $config.output.clone();
+        if $config.inputs.len() != 1 {
+            let multi_report = build_multi_report_root($config)?;
+            $exporter_struct::new($renderer, multi_report, &output, &LocalFileSystem).render_root();
+            Ok::<(), String>(())
+        } else {
+            let root = build_single_report_root($config)?;
+            $exporter_struct::new($renderer, root, &output, &LocalFileSystem).render_root();
+            Ok::<(), String>(())
+        }
+    }};
 }
 
-fn export_text_summary(config: Config) -> Result<(), Box<dyn Error>> {
+fn run_report(config: Config, cli_output: &CliOutput<Console>) -> Result<(), String> {
     let output = config.output.clone();
-    let renderer = TextSinglePageRenderer;
-    if config.inputs.len() != 1 {
-        let multi_report = build_multi_report_root(config)?;
-        SpaExporter::new(renderer, multi_report, &output, &LocalFileSystem).render_root();
-    } else {
-        let root = build_single_report_root(config)?;
-        SpaExporter::new(renderer, root, &output, &LocalFileSystem).render_root();
-    };
-    Ok(())
-}
-
-fn run_report(config: Config) -> Result<(), Box<dyn Error>> {
-    let output = config.output.clone();
-    let cli_output = CliOutput::new(Console);
 
     cli_output.print_introduction(&config);
 
     match config.reporter {
-        Reporter::MpaHtmlLightReporter => export_mpa_html_light_renderer(config)?,
-        Reporter::TextSummaryReporter => export_text_summary(config)?,
+        Reporter::MpaHtmlLightReporter => export!(
+            MpaExporter,
+            HtmlLightRenderer::new(MpaLinksComputer),
+            config
+        )?,
+        Reporter::TextSummaryReporter => export!(SpaExporter, TextSinglePageRenderer, config)?,
     };
 
     cli_output.print_conclusion(&output.display().to_string());
     Ok(())
 }
 
-fn save_config_to_file(config: Config, path: &PathBuf) -> Result<(), Box<dyn Error>> {
-    let config_str = toml::to_string(&config)?;
+fn save_config_to_file(config: Config, path: &PathBuf) -> Result<(), String> {
+    let config_str = toml::to_string(&config).map_err(|e| e.to_string())?;
     if path.exists() {
         println!("File already exists, overwriting it?");
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
+        std::io::stdin()
+            .read_line(&mut input)
+            .map_err(|e| e.to_string())?;
         if input.to_lowercase().trim() != "y" {
             println!("Aborting");
         }
     }
     if path.parent().is_some() {
-        std::fs::create_dir_all(path.parent().unwrap())?;
+        std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
     }
-    std::fs::write(path, config_str)?;
+    std::fs::write(path, config_str).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-fn read_config_from_file(path: &PathBuf) -> Result<Config, Box<dyn Error>> {
-    let config_str = std::fs::read_to_string(path)?;
-    let config = toml::from_str::<Config>(&config_str)?;
+fn read_config_from_file(path: &PathBuf) -> Result<Config, String> {
+    let config_str = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let config = toml::from_str::<Config>(&config_str).map_err(|e| e.to_string())?;
     Ok(config)
 }
 
-pub fn run(command: CliCommand) -> Result<(), Box<dyn Error>> {
+fn run_command(args: Vec<String>, cli_output: &CliOutput<Console>) -> Result<(), String> {
+    let command = CliConfigParser::new().parse(&args)?.build()?;
     match command {
-        CliCommand::Report(config) => run_report(config)?,
+        CliCommand::Report(config) => run_report(config, &cli_output)?,
         CliCommand::ToFile(path, config) => save_config_to_file(config, &path)?,
         CliCommand::FromFile(path) => {
             let config = read_config_from_file(&path)?;
-            run_report(config)?;
+            run_report(config, &cli_output)?
         }
-    }
-
+    };
     Ok(())
+}
+
+pub fn run(args: Vec<String>) -> () {
+    let cli_output = CliOutput::new(Console);
+    match run_command(args, &cli_output) {
+        Ok(_) => (),
+        Err(e) => cli_output.print_error(&e),
+    }
 }
