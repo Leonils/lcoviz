@@ -23,6 +23,7 @@ pub mod operations;
 pub mod adapters {
     pub(crate) mod renderers {
         pub(crate) mod html_light_renderer;
+        pub(crate) mod text_single_page_renderer;
 
         mod components {
             pub(crate) mod chip;
@@ -40,6 +41,7 @@ pub mod adapters {
     pub(crate) mod exporters {
         pub(crate) mod mpa;
         pub(crate) mod mpa_links;
+        pub(crate) mod spa;
     }
 
     pub mod cli {
