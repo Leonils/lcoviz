@@ -1,0 +1,50 @@
+NAME
+       lcoviz - visualize LCOV coverage data
+
+SYNOPSIS
+       lcoviz [command] [options]
+
+DESCRIPTION
+       This tool is used to visualize LCOV coverage data. It can be used to generate a html or 
+       text reports
+
+COMMANDS
+       report Generate a report from the LCOV data
+
+       help   Display help information
+
+       to-file [file_path]
+              Save the command line options to a toml file for later use
+
+       from-file [file_path]
+              Load the command line options from a toml file
+
+OPTIONS
+   Common options
+       -h, --help
+              Display help information for current command
+
+EXAMPLES
+        1. Generate a report from 3 lcov files with different level of customization:
+
+               lcoviz report
+                   --name 'Coverage report for my 3 projects'
+                   --reporter html
+                   --input ./project_1.lcov
+                   --input MyProject ./project_2.lcov
+                   --input AnotherProject /with/some/custom/prefix/ project_3.lcov
+                   --output ./coverage_report
+
+        2. Save command from example 1 to a file:
+
+               lcoviz to-file config.toml
+                   --name 'Coverage report for my 3 projects'
+                   --reporter html
+                   --input ./project_1.lcov
+                   --input MyProject ./project_2.lcov
+                   --input AnotherProject /with/some/custom/prefix/ project_3.lcov
+                   --output ./coverage_report
+
+        3. Generate report using config from example 2
+
+               lcoviz from-file config.toml

@@ -1,0 +1,17 @@
+COMMAND from-file
+
+SYNOPSIS
+       lcoviz from-file <file-path>
+
+DESCRIPTION
+       Generate report using config file.
+
+OPTIONS
+   Common options
+       -h, --help
+              Display help information for current command
+
+EXAMPLES
+       Generate report using config file:
+
+              lcoviz from-file config.toml

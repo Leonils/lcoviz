@@ -7,6 +7,7 @@ pub enum CliCommand {
     Report(Config),
     FromFile(PathBuf),
     ToFile(PathBuf, Config),
+    Help(String),
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -19,6 +20,7 @@ pub struct CliConfigParser {
     output: Option<PathBuf>,
     command: Option<String>,
     config_file: Option<PathBuf>,
+    help: Option<String>,
 }
 impl CliConfigParser {
     pub fn new() -> Self {
@@ -29,6 +31,15 @@ impl CliConfigParser {
         self.args = args.to_vec();
 
         let command = self.next().ok_or("No command provided")?;
+        if self.detect_help() {
+            self.command = Some("help".to_string());
+            match command.as_str() {
+                "report" | "from-file" | "to-file" => self.help = Some(command),
+                _ => self.help = Some("".to_string()),
+            }
+            return Ok(self);
+        }
+
         match command.as_str() {
             "report" => {
                 self.command = Some("report".to_string());
@@ -50,10 +61,18 @@ impl CliConfigParser {
                 self.parse_report_command()?;
                 return Ok(self);
             }
+            "help" => {
+                self.command = Some("help".to_string());
+                self.help = Some("".to_string());
+            }
             _ => return Err(format!("Unknown command: {}", command)),
         }
 
         Ok(self)
+    }
+
+    fn detect_help(&mut self) -> bool {
+        self.args.iter().any(|arg| arg == "--help" || arg == "-h")
     }
 
     fn parse_report_command(&mut self) -> Result<(), String> {
@@ -113,6 +132,7 @@ impl CliConfigParser {
                 .build_config()
                 .map(|config| CliCommand::ToFile(config_file.unwrap(), config))
                 .map_err(|e| format!("Argument --to-file is required: {}", e)),
+            Some("help") => Ok(CliCommand::Help(self.help.unwrap_or("".to_string()))),
             _ => Err("No command provided".to_string()),
         }
     }

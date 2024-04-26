@@ -102,6 +102,8 @@ fn run_command(args: Vec<String>, cli_output: &CliOutput<Console>) -> Result<(),
             let config = read_config_from_file(&path)?;
             run_report(config, &cli_output)?
         }
+        CliCommand::Help(command) if command.is_empty() => cli_output.print_help(),
+        CliCommand::Help(command) => cli_output.print_command_help(&command),
     };
     Ok(())
 }

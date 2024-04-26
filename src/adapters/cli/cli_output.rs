@@ -73,6 +73,19 @@ impl<TConsole: Printer> CliOutput<TConsole> {
     pub fn print_conclusion(&self, output: &str) {
         self.print_status("Success", &format!("Report generated at {}", output));
     }
+
+    pub fn print_help(&self) {
+        self.console.println(include_str!("help.txt"));
+    }
+
+    pub fn print_command_help(&self, command: &str) {
+        match command {
+            "report" => self.console.println(include_str!("help.report.txt")),
+            "to-file" => self.console.println(include_str!("help.to-file.txt")),
+            "from-file" => self.console.println(include_str!("help.from-file.txt")),
+            _ => self.console.println("Unknown command"),
+        }
+    }
 }
 
 #[cfg(test)]

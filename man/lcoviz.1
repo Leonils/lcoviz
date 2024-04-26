@@ -1,0 +1,130 @@
+'\" t
+.TH "LCOVIZ" "1"
+.nh
+.ad l
+.ss \n[.ss] 0
+.SH "NAME"
+lcoviz \- visualize LCOV coverage data
+.SH "SYNOPSIS"
+\fBlcoviz\fR [\fIcommand\fR] [\fIoptions\fR]
+.SH "DESCRIPTION"
+This tool is used to visualize LCOV coverage data. It can be used 
+to generate a html or text reports
+.SH "COMMANDS"
+.TP
+\fBreport\fR
+Generate a report from the LCOV data
+.TP
+\fBhelp\fR
+Display help information
+.TP
+\fBto-file [\fIfile_path\fR]\fR
+Save the command line options to a toml file for later use
+.TP
+\fBfrom-file [\fIfile_path\fR]\fR
+Load the command line options from a toml file
+
+.SH "OPTIONS"
+.SS "Common options"
+.TP
+\fB\-h, \-\-help\fR
+Display help information for current command
+
+.SS "report and to-file options"
+.TP
+\fB\-i, \-\-input \fI<lcov-file-path>\fR\fR
+.TQ
+\fB\-i, \-\-input \fI<report-name>\fR \fI<lcov-file-path>\fR\fR
+.TQ
+\fB\-i, \-\-input \fI<report-name>\fR \fI<prefix>\fR \fI<lcov-file-path>\fR\fR
+Add a LCOV file input. If one argument is provided, the prefix
+will be derived from the longest common prefix of the tested 
+files in the LCOV report, and name will be the last component of
+the prefix. If two arguments are provided, the prefix will still
+be derived, bu the name will be the first argument. If three 
+arguments are provided, the prefix will be the second argument. 
+This prefix shall still be common to all files in the LCOV report.
+This option may allow you to show in the visualization folders 
+that otherwise would be hidden by the common prefix.
+
+.TP 
+\fB\-o, \-\-output \fI<output-path>\fR\fR
+Set the output path for the report. The output shall be 
+a directory. If it does not exists it will be created. 
+If it exists, it will be overwritten.
+
+.TP
+\fB\-n, \-\-name \fI<name>\fR\fR
+Set the name of the report. This name will be used as a 
+title for the visualization
+
+.TP
+\fB\-t, \-\-reporter \fI<reporter>\fR\fR
+Set the reporter to be used. The default is html.
+See the \fBreporter\fR section for more information.
+
+.SH "REPORTERS"
+The following reporters are available:
+
+.TP
+\fBhtml-full-light\fR
+.TQ
+\fBhtml-full\fR
+.TQ
+\fBhtml\fR
+The default multi-page reporter, light theme. It will generate
+one html page for each file, module, and an index page.
+
+.TP
+\fBtext-summary\fR
+A text reporter that will generate a summary of the coverage,
+only giving aggregated coverage for each module, file and for the 
+whole report.
+
+.SH
+.SH "EXAMPLES"
+
+.sp
+.RS 4
+\h'-04' 1.\h'+01'Generate a report from 3 lcov files with different level of customization:
+.sp
+.RS 4
+.nf
+lcoviz report
+    --name 'Coverage report for my 3 projects'
+    --reporter html
+    --input ./project_1.lcov
+    --input MyProject ./project_2.lcov
+    --input AnotherProject /with/some/custom/prefix/ project_3.lcov
+    --output ./coverage_report
+.fi
+.RE
+.RE
+
+.sp
+.RS 4
+\h'-04' 2.\h'+01'Save command from example 1 to a file:
+.sp
+.RS 4
+.nf
+lcoviz to-file config.toml
+    --name 'Coverage report for my 3 projects'
+    --reporter html
+    --input ./project_1.lcov
+    --input MyProject ./project_2.lcov
+    --input AnotherProject /with/some/custom/prefix/ project_3.lcov
+    --output ./coverage_report
+.fi
+.RE
+.RE
+
+.sp
+.RS 4
+\h'-04' 3.\h'+01'Generate report using config from example 2
+.sp
+.RS 4
+.nf
+lcoviz from-file config.toml
+.fi
+.RE
+.RE

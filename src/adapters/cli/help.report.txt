@@ -1,0 +1,55 @@
+COMMAND report
+
+SYNOPSIS
+       lcoviz report [options]
+
+DESCRIPTION
+       Generate a report from the LCOV data.
+
+OPTIONS
+   Common options
+       -h, --help
+              Display help information for current command
+
+   Specific options
+       -i, --input <lcov-file-path>
+       -i, --input <report-name> <lcov-file-path>
+       -i, --input <report-name> <prefix> <lcov-file-path>
+              Add a LCOV file input. If one argument is provided, the prefix will be derived 
+              from the longest common prefix of the
+              tested files in the LCOV report, and name will be the last component of the prefix. If two arguments are provided, the
+              prefix will still be derived, bu the name will be the first argument. If three arguments are provided, the prefix will
+              be the second argument. This prefix shall still be common to all files in the LCOV report. This option may allow you to
+              show in the visualization folders that otherwise would be hidden by the common prefix.
+
+       -o, --output <output-path>
+              Set the output path for the report. The output shall be a directory. If it does not exists it will be created. If it
+              exists, it will be overwritten.
+
+       -n, --name <name>
+              Set the name of the report. This name will be used as a title for the visualization
+
+       -t, --reporter <reporter>
+              Set the reporter to be used. The default is html. See the reporter section for more information.
+
+REPORTERS
+       The following reporters are available:
+
+       html-full-light
+       html-full
+       html   The default multi-page reporter, light theme. It will generate one html page for each file, module, and an index page.
+
+       text-summary
+              A text reporter that will generate a summary of the coverage, only giving aggregated coverage for each module, file and
+              for the whole report.
+
+EXAMPLES
+       Generate a report from 3 lcov files with different level of customization:
+
+               lcoviz report
+                   --name 'Coverage report for my 3 projects'
+                   --reporter html
+                   --input ./project_1.lcov
+                   --input MyProject ./project_2.lcov
+                   --input AnotherProject /with/some/custom/prefix/ project_3.lcov
+                   --output ./coverage_report
