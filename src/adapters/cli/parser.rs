@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::input::config::{Config, Input};
+use crate::input::config::{Config, Input, Reporter};
 
 #[derive(Debug, PartialEq)]
 pub enum CliCommand {
@@ -11,6 +11,7 @@ pub enum CliCommand {
 
 #[derive(Debug, PartialEq, Default)]
 pub struct CliConfigParser {
+    reporter: Option<Reporter>,
     args: Vec<String>,
     step: usize,
     name: Option<String>,
@@ -59,6 +60,7 @@ impl CliConfigParser {
         while let Some(arg) = self.next() {
             let arg_str = arg.as_str();
             match arg_str {
+                "--reporter" | "-r" => self.set_reporter(arg_str)?,
                 "--name" | "-n" => self.set_name(arg_str)?,
                 "--input" | "-i" => self.add_input(arg_str)?,
                 "--output" | "-o" => self.set_output(arg_str)?,
@@ -94,6 +96,7 @@ impl CliConfigParser {
             name: self.name.unwrap_or_else(|| "Test report".to_string()),
             inputs: self.inputs,
             output,
+            reporter: self.reporter.unwrap_or_default(),
         })
     }
 
@@ -162,6 +165,24 @@ impl CliConfigParser {
         }
         self.name = Some(name);
         Ok(())
+    }
+
+    fn set_reporter(&mut self, arg_name: &str) -> Result<(), String> {
+        let reporter = self.get_next_value(arg_name)?;
+        if self.reporter.is_some() {
+            return Err(format!("Argument {} already provided", arg_name));
+        }
+        match Reporter::from_str(&reporter) {
+            Some(r) => {
+                self.reporter = Some(r);
+                Ok(())
+            }
+            None => Err(format!(
+                "Unknown reporter: {}. Available reporters are {}",
+                reporter,
+                Reporter::list_available().join(", ")
+            )),
+        }
     }
 
     fn set_output(&mut self, arg_name: &str) -> Result<(), String> {
@@ -273,7 +294,8 @@ mod test {
             CliCommand::Report(Config {
                 output: PathBuf::from("output"),
                 name: "Test report".to_string(),
-                inputs: vec![Input::from_path(PathBuf::from("~/test.lcov"))]
+                inputs: vec![Input::from_path(PathBuf::from("~/test.lcov"))],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -291,7 +313,8 @@ mod test {
                 inputs: vec![
                     Input::from_path(PathBuf::from("~/test.lcov")),
                     Input::from_path(PathBuf::from("~/test2.lcov"))
-                ]
+                ],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -325,7 +348,8 @@ mod test {
                 inputs: vec![Input::from_name_and_path(
                     "named_root".to_string(),
                     PathBuf::from("~/test.lcov")
-                )]
+                )],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -344,7 +368,8 @@ mod test {
                     "named_root".to_string(),
                     PathBuf::from("/foo/bar"),
                     PathBuf::from("~/test.lcov")
-                )]
+                )],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -367,7 +392,8 @@ mod test {
                         PathBuf::from("/foo/bar"),
                         PathBuf::from("~/test3.lcov")
                     )
-                ]
+                ],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -389,7 +415,8 @@ mod test {
                         PathBuf::from("/foo/bar"),
                         PathBuf::from("~/test3.lcov")
                     )
-                ]
+                ],
+                reporter: Reporter::default(),
             })
         );
     }
@@ -466,6 +493,46 @@ mod test {
         assert_eq!(
             parse("from-file config.toml -o output").unwrap_err(),
             "No other arguments are allowed with from-file command"
+        );
+    }
+
+    #[test]
+    fn when_running_with_reporter_it_shall_set_the_reporter() {
+        assert_eq!(
+            parse("report --output output --reporter text-summary")
+                .unwrap()
+                .build()
+                .unwrap(),
+            CliCommand::Report(Config {
+                output: PathBuf::from("output"),
+                name: "Test report".to_string(),
+                reporter: Reporter::TextSummaryReporter,
+                ..Default::default()
+            })
+        );
+    }
+
+    #[test]
+    fn when_running_with_reporter_alias_it_shall_set_the_reporter() {
+        assert_eq!(
+            parse("report --output output --reporter html")
+                .unwrap()
+                .build()
+                .unwrap(),
+            CliCommand::Report(Config {
+                output: PathBuf::from("output"),
+                name: "Test report".to_string(),
+                reporter: Reporter::MpaHtmlLightReporter,
+                ..Default::default()
+            })
+        );
+    }
+
+    #[test]
+    fn when_specifying_inexistant_reporter_it_shall_fail() {
+        assert_eq!(
+            parse("report --output output --reporter inexistant").unwrap_err(),
+            "Unknown reporter: inexistant. Available reporters are html-full-light, text-summary"
         );
     }
 }

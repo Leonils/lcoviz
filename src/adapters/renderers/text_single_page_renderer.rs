@@ -10,10 +10,10 @@ pub struct TextSinglePageRenderer;
 
 impl TextSinglePageRenderer {
     fn render_aggregated_counters(counters: &AggregatedCoverageCounters) -> String {
+        let counters_string = format!("{}/{}", counters.covered_count, counters.count);
         format!(
-            "{: >5}/{: <5} {: >8}",
-            counters.covered_count,
-            counters.count,
+            "{: >10} {: >8}",
+            counters_string,
             render_optional_percentage(counters.percentage()),
         )
     }
@@ -30,7 +30,7 @@ impl TextSinglePageRenderer {
     fn render_line(level: u32, name: &str, coverage: &AggregatedCoverage) -> String {
         let name_wit_padding = "  ".repeat(level as usize) + name;
         format!(
-            "{: <30} {}
+            "{: <50} {}
 ",
             name_wit_padding,
             Self::render_aggregated_coverage(coverage)
@@ -98,9 +98,10 @@ impl Renderer for TextSinglePageRenderer {
         module: &impl TestedContainer,
     ) -> String {
         format!(
-            "{}\n{}",
+            "{}
+{}",
             Self::render_root(module),
-            Self::render_module(module, 0)
+            Self::render_module(module, 1)
         )
     }
 }
@@ -118,15 +119,15 @@ mod test {
         assert_eq!(
             rendered,
             r#"Test report:
-  - Lines         5/6       83.33%
-  - Functions     3/3      100.00%
-  - Branches      1/2       50.00%
+  - Lines            5/6   83.33%
+  - Functions        3/3  100.00%
+  - Branches         1/2   50.00%
 
 Details:
 
-main.cpp                       Lines     3/4       75.00%    Functions     2/2      100.00%    Branches     1/2       50.00%
-module                         Lines     2/2      100.00%    Functions     1/1      100.00%    Branches     0/0            -
-  nested.cpp                   Lines     2/2      100.00%    Functions     1/1      100.00%    Branches     0/0            -
+  main.cpp                                         Lines        3/4   75.00%    Functions        2/2  100.00%    Branches        1/2   50.00%
+  module                                           Lines        2/2  100.00%    Functions        1/1  100.00%    Branches        0/0        -
+    nested.cpp                                     Lines        2/2  100.00%    Functions        1/1  100.00%    Branches        0/0        -
 "#
         );
     }

@@ -4,12 +4,18 @@ use crate::{
             cli_output::{CliOutput, Console},
             parser::CliCommand,
         },
-        exporters::{mpa::MpaExporter, mpa_links::MpaLinksComputer},
-        renderers::html_light_renderer::HtmlLightRenderer,
+        exporters::{mpa::MpaExporter, mpa_links::MpaLinksComputer, spa::SpaExporter},
+        renderers::{
+            html_light_renderer::HtmlLightRenderer,
+            text_single_page_renderer::TextSinglePageRenderer,
+        },
     },
     aggregation::{multi_report::MultiReport, tested_root::TestedRoot},
     core::{Exporter, LocalFileSystem},
-    input::{aggregator_input::AggregatorInput, config::Config},
+    input::{
+        aggregator_input::AggregatorInput,
+        config::{Config, Reporter},
+    },
 };
 use std::{error::Error, path::PathBuf};
 
@@ -29,25 +35,45 @@ fn build_single_report_root(config: Config) -> Result<TestedRoot, Box<dyn Error>
     Ok(tested_root)
 }
 
-fn run_report(config: Config) -> Result<(), Box<dyn Error>> {
-    let cli_output = CliOutput::new(Console);
+fn export_mpa_html_light_renderer(config: Config) -> Result<(), Box<dyn Error>> {
+    let output = config.output.clone();
     let links_computer = MpaLinksComputer;
-    let file_system = LocalFileSystem;
     let renderer = HtmlLightRenderer::new(links_computer);
+    if config.inputs.len() != 1 {
+        let multi_report = build_multi_report_root(config)?;
+        MpaExporter::new(renderer, multi_report, &output, &LocalFileSystem).render_root();
+    } else {
+        let root = build_single_report_root(config)?;
+        MpaExporter::new(renderer, root, &output, &LocalFileSystem).render_root();
+    };
+    Ok(())
+}
+
+fn export_text_summary(config: Config) -> Result<(), Box<dyn Error>> {
+    let output = config.output.clone();
+    let renderer = TextSinglePageRenderer;
+    if config.inputs.len() != 1 {
+        let multi_report = build_multi_report_root(config)?;
+        SpaExporter::new(renderer, multi_report, &output, &LocalFileSystem).render_root();
+    } else {
+        let root = build_single_report_root(config)?;
+        SpaExporter::new(renderer, root, &output, &LocalFileSystem).render_root();
+    };
+    Ok(())
+}
+
+fn run_report(config: Config) -> Result<(), Box<dyn Error>> {
+    let output = config.output.clone();
+    let cli_output = CliOutput::new(Console);
 
     cli_output.print_introduction(&config);
 
-    let output = config.output.clone();
-    if config.inputs.len() != 1 {
-        let multi_report = build_multi_report_root(config)?;
-        MpaExporter::new(renderer, multi_report, &output, &file_system).render_root();
-    } else {
-        let root = build_single_report_root(config)?;
-        MpaExporter::new(renderer, root, &output, &file_system).render_root();
+    match config.reporter {
+        Reporter::MpaHtmlLightReporter => export_mpa_html_light_renderer(config)?,
+        Reporter::TextSummaryReporter => export_text_summary(config)?,
     };
 
     cli_output.print_conclusion(&output.display().to_string());
-
     Ok(())
 }
 

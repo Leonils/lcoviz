@@ -32,11 +32,50 @@ impl Input {
     }
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub enum Reporter {
+    #[serde(rename = "html-full-light")]
+    #[serde(alias = "html-full")]
+    #[serde(alias = "html")]
+    MpaHtmlLightReporter,
+
+    #[serde(rename = "text-summary")]
+    TextSummaryReporter,
+}
+impl Reporter {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "html" => Some(Reporter::MpaHtmlLightReporter),
+            "html-full" => Some(Reporter::MpaHtmlLightReporter),
+            "html-full-light" => Some(Reporter::MpaHtmlLightReporter),
+            "text-summary" => Some(Reporter::TextSummaryReporter),
+            _ => None,
+        }
+    }
+    pub fn to_str(&self) -> &str {
+        match self {
+            Reporter::MpaHtmlLightReporter => "html-full-light",
+            Reporter::TextSummaryReporter => "text-summary",
+        }
+    }
+    pub fn list_available() -> Vec<&'static str> {
+        vec!["html-full-light", "text-summary"]
+    }
+}
+impl Default for Reporter {
+    fn default() -> Self {
+        Reporter::MpaHtmlLightReporter
+    }
+}
+
 #[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Config {
     pub name: String,
     pub inputs: Vec<Input>,
     pub output: PathBuf,
+
+    #[serde(default)]
+    pub reporter: Reporter,
 }
 
 #[cfg(test)]
@@ -84,6 +123,65 @@ path = "test3"
                     },
                 ],
                 output: PathBuf::from("test"),
+                reporter: Reporter::MpaHtmlLightReporter,
+            }
+        );
+    }
+
+    #[test]
+    fn test_read_config_from_toml_with_reporter() {
+        let config = toml::from_str::<Config>(
+            r#"name = "test"
+reporter = "text-summary"
+output = "test"
+
+[[inputs]]
+name = "test1"
+prefix = "test1"
+path = "test1"
+"#,
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                name: "test".to_string(),
+                inputs: vec![Input {
+                    name: Some("test1".to_string()),
+                    prefix: Some(PathBuf::from("test1")),
+                    path: PathBuf::from("test1"),
+                }],
+                output: PathBuf::from("test"),
+                reporter: Reporter::TextSummaryReporter,
+            }
+        );
+    }
+
+    #[test]
+    fn test_read_config_from_toml_with_reporter_alias() {
+        let config = toml::from_str::<Config>(
+            r#"name = "test"
+reporter = "html"
+output = "test"
+
+[[inputs]]
+name = "test1"
+prefix = "test1"
+path = "test1"
+"#,
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                name: "test".to_string(),
+                inputs: vec![Input {
+                    name: Some("test1".to_string()),
+                    prefix: Some(PathBuf::from("test1")),
+                    path: PathBuf::from("test1"),
+                }],
+                output: PathBuf::from("test"),
+                reporter: Reporter::MpaHtmlLightReporter,
             }
         );
     }

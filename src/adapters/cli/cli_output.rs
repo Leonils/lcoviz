@@ -55,6 +55,7 @@ impl<TConsole: Printer> CliOutput<TConsole> {
         );
 
         self.print_status("", &format!("Report name: '{}'", config.name));
+        self.print_status("", &format!("Reporter: '{}'", config.reporter.to_str()));
         self.print_status("", "Inputs: ");
         for input in config.inputs.iter() {
             self.print_input(input);
@@ -69,6 +70,8 @@ impl<TConsole: Printer> CliOutput<TConsole> {
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
+
+    use crate::input::config::Reporter;
 
     use super::*;
 
@@ -93,6 +96,7 @@ mod test {
         let console = MockPrinter::new()
             .expect("Generating HTML report for 2 input(s) lcov files")
             .expect("Report name: 'test'")
+            .expect("Reporter: 'html-full-light'")
             .expect("Inputs:")
             .expect("- test1: test1/test1")
             .expect("- test2");
@@ -104,6 +108,7 @@ mod test {
                 Input::from_path(PathBuf::from("test2")),
             ],
             output: PathBuf::from("test"),
+            reporter: Reporter::default(),
         });
     }
 
