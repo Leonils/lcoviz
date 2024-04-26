@@ -8,6 +8,13 @@ repository = "https://github.com/Leonils/lcoviz"
 readme = "README.md"
 keywords = ["lcov", "coverage", "visualization"]
 categories = ["development-tools"]
+include=[
+    "src/**",
+    "Cargo.toml",
+    "Cargo.lock",
+    "README.md",
+    "LICENSE",
+]
 
 [dependencies]
 htmlescape = "0.3.1"
