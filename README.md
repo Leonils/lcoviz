@@ -70,6 +70,16 @@ The `from-file` command takes a path to the config file, and then generates the 
 lcoviz from-file ./config.toml
 ```
 
+## Screenshots
+
+### HTML report
+
+![HTML report](./docs/screenshots/html-full-light.png)
+
+## Text report
+
+![Text report](./docs/screenshots/text-summary.png)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
