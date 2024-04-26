@@ -74,11 +74,11 @@ lcoviz from-file ./config.toml
 
 ### HTML report
 
-![HTML report](./docs/screenshots/html-full-light.png)
+![HTML report](https://github.com/Leonils/lcoviz/raw/main/docs/screenshots/html-full-light.png)
 
 ## Text report
 
-![Text report](./docs/screenshots/text-summary.png)
+![Text report](https://github.com/Leonils/lcoviz/raw/main/docs/screenshots/text-summary.png)
 
 ## License
 
