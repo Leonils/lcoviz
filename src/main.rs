@@ -1,4 +1,4 @@
-use lcov_aggregator_report::operations::run;
+use lcoviz::operations::run;
 use std::env::args;
 
 fn main() {

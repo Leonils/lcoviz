@@ -70,7 +70,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lcov-aggregator-report"
+name = "lcoviz"
 version = "0.1.0"
 dependencies = [
  "htmlescape",
